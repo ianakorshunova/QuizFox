@@ -40,26 +40,32 @@ Permanent database changes such as saving, replacing, renaming, or deleting sets
 - psycopg
 - HTML / CSS
 
-```markdown
 ## Local Setup
 
 Install dependencies:
 
 ```bash
 pip install -r requirements.txt
+```
 
-## Create
+Create:
 
+```text
 .streamlit/secrets.toml
+```
 
-## Add
+Add:
 
+```toml
 NEON_DATABASE_URL = "your_database_connection_string"
 APP_MODE = "owner"
+```
 
-## Then run
+Then run:
 
+```bash
 streamlit run app.py
+```
 
 ## Status
 
