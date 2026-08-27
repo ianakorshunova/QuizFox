@@ -14,13 +14,13 @@ APP_MODE = os.getenv(
     st.secrets.get("APP_MODE", "demo")
 )
 
+def t(key):
+    return translations[st.session_state.language][key]
+
 DEMO_MODE = APP_MODE == "demo"
 
 if DEMO_MODE:
-    st.info(
-        "Portfolio demo — database changes are disabled. "
-        "You can add vocabulary and try quizzes, but changes won’t be saved."
-    )
+    st.info(t("demo_mode_banner"))
 
 def load_css(file_name):
     with open(file_name, "r") as f:
@@ -382,6 +382,11 @@ translations = {
         "wrong_3": "🦊 Not this time!",
         "wrong_4": "🦊 The fox demands another attempt.",
         "wrong_5": "🦊 So close!",
+
+        "demo_mode_banner": (
+            "Portfolio demo — database changes are disabled. "
+            "You can add vocabulary and try quizzes, but changes won’t be saved."
+        ),
     },
 
     "ru": {
@@ -504,11 +509,16 @@ translations = {
         "wrong_3": "🦊 В этот раз не вышло!",
         "wrong_4": "🦊 Лис требует ещё одну попытку.",
         "wrong_5": "🦊 Совсем близко!",
+
+        "demo_mode_banner": (
+            "Демо для портфолио — изменения в базе данных отключены. "
+            "Вы можете добавлять слова и проходить квизы, но изменения не сохранятся."
+        ),
     },
 }
 
-def t(key):
-    return translations[st.session_state.language][key]
+# def t(key):
+#     return translations[st.session_state.language][key]
 # -------------------------
 # Session state
 # -------------------------
