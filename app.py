@@ -201,19 +201,19 @@ def load_sets_from_db():
     return sets
 
 correct_reactions = [
-    "🦊 Correct!",
-    "🦊 Fox-approved!",
-    "🦊 Nice one!",
-    "🦊 Nailed it!",
-    "🦊 The fox is impressed."
+    "correct_1",
+    "correct_2",
+    "correct_3",
+    "correct_4",
+    "correct_5",
 ]
 
 wrong_reactions = [
-    "🦊 Almost!",
-    "🦊 Sneaky question!",
-    "🦊 Not this time!",
-    "🦊 The fox demands another attempt.",
-    "🦊 So close!"
+    "wrong_1",
+    "wrong_2",
+    "wrong_3",
+    "wrong_4",
+    "wrong_5",
 ]
 
 st.set_page_config(
@@ -246,6 +246,269 @@ def create_question(correct_item):
         "options": options
     }
 
+def format_word_count(count):
+    if st.session_state.language == "en":
+        return f"{count} word" if count == 1 else f"{count} words"
+
+    if 11 <= count % 100 <= 14:
+        form = "слов"
+    elif count % 10 == 1:
+        form = "слово"
+    elif 2 <= count % 10 <= 4:
+        form = "слова"
+    else:
+        form = "слов"
+
+    return f"{count} {form}"
+
+translations = {
+    "en": {
+        "navigation": "Navigation",
+        "vocabulary": "Vocabulary",
+        "quiz": "Quiz",
+
+        "add_vocabulary": "Add vocabulary",
+        "paste_vocabulary": (
+            "Paste vocabulary "
+            "(one pair per line; use a tab, —, or 2+ spaces):"
+        ),
+        "import_vocabulary": "Import vocabulary",
+        "word": "Word",
+        "translation": "Translation",
+        "add_word": "Add word",
+        "vocabulary_set": "Vocabulary set",
+        "clear_vocabulary": "Clear vocabulary",
+        "saved_sets": "Saved sets",
+        "set_name": "Set name",
+        "save_set": "Save set",
+        "your_saved_sets": "Your saved sets",
+        "choose_set": "Choose a set",
+        "load_set": "Load set",
+        "rename_set": "Rename set",
+        "delete_set": "Delete set",
+        "add_vocabulary": "Add vocabulary",
+        "import_vocabulary": "Import vocabulary",
+        "paste_vocabulary": (
+            "Paste vocabulary "
+            "(one pair per line; use a tab, —, or 2+ spaces):"
+        ),
+        "import_button": "Import vocabulary",
+        "all_words_exist": "All these words are already in the vocabulary set.",
+        "no_valid_pairs": "No valid vocabulary pairs found.",
+        "word": "Word",
+        "translation": "Translation",
+        "add_word": "Add word",
+        "enter_both": "Please enter both the word and the translation.",
+        "imported_words": "Imported {count} new words.",
+        "added_word": "Added: {word} — {translation}",
+        "vocabulary_set": "Vocabulary set",
+        "clear_vocabulary": "Clear vocabulary",
+        "edit": "Edit",
+        "delete": "Delete",
+        "save_changes": "Save changes",
+        "cancel": "Cancel",
+        "pair_exists": "This vocabulary pair already exists.",
+        "empty_word_translation": "Word and translation cannot be empty.",
+        "saved_sets": "Saved sets",
+        "set_name": "Set name",
+        "set_name_placeholder": "e.g. Nature A2",
+        "save_set": "Save set",
+        "enter_set_name": "Enter a set name first.",
+        "add_vocabulary_first": "Add some vocabulary first.",
+        "set_saved": 'Set "{name}" saved!',
+        "set_exists_replace": 'Set "{name}" already exists. Replace it?',
+        "yes_replace": "Yes, replace",
+        "cancel_replace": "Cancel replace",
+        "your_saved_sets": "Your saved sets",
+        "choose_set": "Choose a set",
+        "words_count": "{count} words",
+        "load_set": "Load set",
+        "set_loaded": 'Set "{name}" loaded!',
+        "delete_set": "Delete set",
+        "delete_set_confirm": 'Delete set "{name}"?',
+        "yes_delete": "Yes, delete",
+        "cancel": "Cancel",
+        "rename_set": "Rename set",
+        "new_set_name": "New set name",
+        "save_new_name": "Save new name",
+        "set_name_empty": "Set name cannot be empty.",
+        "set_name_exists": "A set with this name already exists.",
+        "cancel_rename": "Cancel rename",
+        "quiz_title": "Quiz",
+        "score": "Score",
+        "add_4_words": "Add at least 4 words to generate a quiz.",
+        "number_questions": "Number of questions:",
+        "quiz_type": "Quiz type:",
+        "multiple_choice": "Multiple Choice",
+        "gap_fill": "Gap Fill",
+        "matching": "Matching",
+        "gap_direction": "Gap Fill direction:",
+        "translation_to_word": "Translation → Word",
+        "word_to_translation": "Word → Translation",
+        "start_quiz": "Start quiz",
+        "match_words": "Match the words",
+        "check_matches": "Check matches",
+        "correct_answer": "correct",
+        "matching_score": "Matching score",
+        "perfect_match": "🦊 Perfect match!",
+        "nice_work": "🦊 Nice work!",
+        "keep_going": "🦊 Keep going!",
+        "next_matching_round": "Next matching round",
+        "end_quiz": "End quiz",
+        "question_progress": "Question {current} of {total}",
+        "what_does_mean": 'What does "{word}" mean?',
+        "choose_answer": "Choose an answer:",
+        "translate_prompt": 'Translate "{text}"',
+        "your_answer": "Your answer:",
+        "check_answer": "Check answer",
+        "enter_answer_first": "Enter an answer first.",
+        "correct_answer_is": "The correct answer is: {answer}",
+        "next_question": "Next question",
+        "end_quiz": "End quiz",
+        "quiz_complete": "Quiz complete! 🦊",
+        "final_score": "Final score",
+        "percent_correct": "{percentage}% correct",
+        "questions_completed": "Questions completed",
+        "practice_mistakes": "Practice mistakes",
+        "start_new_quiz": "Start new quiz",
+        "correct_1": "🦊 Correct!",
+        "correct_2": "🦊 Fox-approved!",
+        "correct_3": "🦊 Nice one!",
+        "correct_4": "🦊 Nailed it!",
+        "correct_5": "🦊 The fox is impressed.",
+
+        "wrong_1": "🦊 Almost!",
+        "wrong_2": "🦊 Sneaky question!",
+        "wrong_3": "🦊 Not this time!",
+        "wrong_4": "🦊 The fox demands another attempt.",
+        "wrong_5": "🦊 So close!",
+    },
+
+    "ru": {
+        "navigation": "Навигация",
+        "vocabulary": "Словарь",
+        "quiz": "Квиз",
+
+        "add_vocabulary": "Добавить слова",
+        "paste_vocabulary": (
+            "Вставьте слова "
+            "(одна пара на строку; используйте табуляцию, — или 2+ пробела):"
+        ),
+        "import_vocabulary": "Импортировать слова",
+        "word": "Слово",
+        "translation": "Перевод",
+        "add_word": "Добавить слово",
+        "vocabulary_set": "Текущий набор",
+        "clear_vocabulary": "Очистить словарь",
+        "saved_sets": "Сохранённые наборы",
+        "set_name": "Название набора",
+        "save_set": "Сохранить набор",
+        "your_saved_sets": "Ваши сохранённые наборы",
+        "choose_set": "Выберите набор",
+        "load_set": "Загрузить набор",
+        "rename_set": "Переименовать набор",
+        "delete_set": "Удалить набор",
+         "add_vocabulary": "Добавить слова",
+        "import_vocabulary": "Импорт слов",
+        "paste_vocabulary": (
+            "Вставьте слова "
+            "(одна пара на строку; используйте табуляцию, — или 2+ пробела):"
+        ),
+        "import_button": "Импортировать слова",
+        "all_words_exist": "Все эти слова уже есть в текущем наборе.",
+        "no_valid_pairs": "Не найдено корректных пар слов.",
+        "word": "Слово",
+        "translation": "Перевод",
+        "add_word": "Добавить слово",
+        "enter_both": "Введите слово и перевод.",
+        "imported_words": "Добавлено новых слов: {count}.",
+        "added_word": "Добавлено: {word} — {translation}",
+        "vocabulary_set": "Текущий набор",
+        "clear_vocabulary": "Очистить словарь",
+        "edit": "Изменить",
+        "delete": "Удалить",
+        "save_changes": "Сохранить изменения",
+        "cancel": "Отмена",
+        "pair_exists": "Такая пара уже есть в словаре.",
+        "empty_word_translation": "Слово и перевод не могут быть пустыми.",
+        "saved_sets": "Сохранённые наборы",
+        "set_name": "Название набора",
+        "set_name_placeholder": "например, Природа A2",
+        "save_set": "Сохранить набор",
+        "enter_set_name": "Введите название набора.",
+        "add_vocabulary_first": "Сначала добавьте слова.",
+        "set_saved": 'Набор «{name}» сохранён!',
+        "set_exists_replace": 'Набор «{name}» уже существует. Заменить его?',
+        "yes_replace": "Да, заменить",
+        "cancel_replace": "Отмена",
+        "your_saved_sets": "Ваши сохранённые наборы",
+        "choose_set": "Выберите набор",
+        "words_count": "{count} слов",
+        "load_set": "Загрузить набор",
+        "set_loaded": 'Набор «{name}» загружен!',
+        "delete_set": "Удалить набор",
+        "delete_set_confirm": 'Удалить набор «{name}»?',
+        "yes_delete": "Да, удалить",
+        "cancel": "Отмена",
+        "rename_set": "Переименовать набор",
+        "new_set_name": "Новое название набора",
+        "save_new_name": "Сохранить новое название",
+        "set_name_empty": "Название набора не может быть пустым.",
+        "set_name_exists": "Набор с таким названием уже существует.",
+        "cancel_rename": "Отменить переименование",
+        "quiz_title": "Квиз",
+        "score": "Счёт",
+        "add_4_words": "Добавьте хотя бы 4 слова, чтобы создать квиз.",
+        "number_questions": "Количество вопросов:",
+        "quiz_type": "Тип задания:",
+        "multiple_choice": "Выбор ответа",
+        "gap_fill": "Заполнить пропуск",
+        "matching": "Сопоставление",
+        "gap_direction": "Направление:",
+        "translation_to_word": "Перевод → Слово",
+        "word_to_translation": "Слово → Перевод",
+        "start_quiz": "Начать квиз",
+        "match_words": "Сопоставьте слова",
+        "check_matches": "Проверить",
+        "correct_answer": "правильно",
+        "matching_score": "Результат сопоставления",
+        "perfect_match": "🦊 Идеально!",
+        "nice_work": "🦊 Отличная работа!",
+        "keep_going": "🦊 Продолжайте!",
+        "next_matching_round": "Следующий раунд",
+        "end_quiz": "Завершить квиз",
+        "question_progress": "Вопрос {current} из {total}",
+        "what_does_mean": 'Что означает «{word}»?',
+        "choose_answer": "Выберите ответ:",
+        "translate_prompt": 'Переведите «{text}»',
+        "your_answer": "Ваш ответ:",
+        "check_answer": "Проверить ответ",
+        "enter_answer_first": "Сначала введите ответ.",
+        "correct_answer_is": "Правильный ответ: {answer}",
+        "next_question": "Следующий вопрос",
+        "end_quiz": "Завершить квиз",
+        "quiz_complete": "Квиз завершён! 🦊",
+        "final_score": "Итоговый счёт",
+        "percent_correct": "Правильных ответов: {percentage}%",
+        "questions_completed": "Выполнено вопросов",
+        "practice_mistakes": "Повторить ошибки",
+        "start_new_quiz": "Начать новый квиз",
+        "correct_1": "🦊 Правильно!",
+        "correct_2": "🦊 Лис одобряет!",
+        "correct_3": "🦊 Отлично!",
+        "correct_4": "🦊 Точно в цель!",
+        "correct_5": "🦊 Лис впечатлён.",
+
+        "wrong_1": "🦊 Почти!",
+        "wrong_2": "🦊 Коварный вопрос!",
+        "wrong_3": "🦊 В этот раз не вышло!",
+        "wrong_4": "🦊 Лис требует ещё одну попытку.",
+        "wrong_5": "🦊 Совсем близко!",
+    },
+}
+
+def t(key):
+    return translations[st.session_state.language][key]
 # -------------------------
 # Session state
 # -------------------------
@@ -358,6 +621,9 @@ if "import_message" not in st.session_state:
 if "fox_mood" not in st.session_state:
     st.session_state.fox_mood = "neutral"
 
+if "language" not in st.session_state:
+    st.session_state.language = "en"
+
 st.session_state.vocabulary_sets = load_sets_from_db()
 
 st.markdown(
@@ -376,20 +642,30 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+language_label = st.sidebar.selectbox(
+    "Language",
+    ["English", "Русский"]
+)
+
+st.session_state.language = (
+    "ru" if language_label == "Русский" else "en"
+)
+
 page = st.sidebar.radio(
-    "Navigation",
-    ["Vocabulary", "Quiz"]
+    t("navigation"),
+    ["vocabulary", "quiz"],
+    format_func=lambda option: t(option)
 )
 
 # -------------------------
 # Add vocabulary
 # -------------------------
 
-if page == "Vocabulary":
+if page == "vocabulary":
 
-    st.subheader("Add vocabulary")
+    st.subheader(t("add_vocabulary"))
 
-    st.subheader("Import vocabulary")
+    st.subheader(t("import_vocabulary"))
 
     if st.session_state.clear_bulk_vocabulary:
         st.session_state.bulk_vocabulary_input = ""
@@ -400,12 +676,12 @@ if page == "Vocabulary":
         st.session_state.import_message = None
 
     bulk_vocabulary = st.text_area(
-        "Paste vocabulary (one pair per line; use a tab, —, or 2+ spaces):",
+        t("paste_vocabulary"),
         placeholder="forest\tлес\nocean\tокеан\ncity\tгород",
         key="bulk_vocabulary_input"
     )
 
-    if st.button("Import vocabulary"):
+    if st.button(t("import_button")):
         imported_words = []
 
         for line in bulk_vocabulary.splitlines():
@@ -459,32 +735,37 @@ if page == "Vocabulary":
             if new_words:
                 st.session_state.vocabulary.extend(new_words)
 
-                st.session_state.import_message = (
-                    f"Imported {len(new_words)} new words."
+                st.session_state.import_message = t(
+                    "imported_words"
+                ).format(
+                    count=len(new_words)
                 )
 
                 st.session_state.clear_bulk_vocabulary = True
                 st.rerun()
 
             else:
-                st.info(
-                    "All these words are already in the vocabulary set."
-                )
+                st.info(t("all_words_exist"))
 
         else:
-            st.warning(
-                "No valid vocabulary pairs found."
-            )
+            st.warning(t("no_valid_pairs"))
 
     if st.session_state.clear_add_form:
         st.session_state.word_input = ""
         st.session_state.translation_input = ""
         st.session_state.clear_add_form = False
 
-    word = st.text_input("Word", key="word_input")
-    translation = st.text_input("Translation", key="translation_input")
+    word = st.text_input(
+        t("word"),
+        key="word_input"
+    )
 
-    if st.button("Add word"):
+    translation = st.text_input(
+        t("translation"),
+        key="translation_input"
+    )
+
+    if st.button(t("add_word")):
         if word and translation:
             st.session_state.vocabulary.append(
                 {
@@ -494,11 +775,16 @@ if page == "Vocabulary":
             )
 
             st.session_state.clear_add_form = True
-            st.session_state.added_message = f"Added: {word} — {translation}"
+            st.session_state.added_message = t(
+                "added_word"
+            ).format(
+                word=word,
+                translation=translation
+            )
             st.rerun()
 
         else:
-            st.warning("Please enter both the word and the translation.")
+            st.warning(t("enter_both"))
 
     if st.session_state.added_message:
         st.success(st.session_state.added_message)
@@ -513,9 +799,9 @@ if page == "Vocabulary":
         st.session_state.load_message = None
 
     if st.session_state.vocabulary:
-        st.subheader("Vocabulary set")
+        st.subheader(t("vocabulary_set"))
 
-        if st.button("Clear vocabulary"):
+        if st.button(t("clear_vocabulary")):
             st.session_state.vocabulary = []
             st.session_state.quiz_words = []
             st.session_state.quiz_question = None
@@ -527,7 +813,7 @@ if page == "Vocabulary":
             st.rerun()
 
         for index, item in enumerate(st.session_state.vocabulary):
-            col1, col2, col3 = st.columns([5, 1, 1])
+            col1, col2, col3 = st.columns([4, 1.4, 1.2])
 
             with col1:
                 st.markdown(
@@ -536,7 +822,7 @@ if page == "Vocabulary":
 
             with col2:
                 if st.button(
-                    "Edit",
+                    t("edit"),
                     key=f"edit_word_{index}"
                 ):
                     st.session_state.editing_word_index = index
@@ -544,7 +830,7 @@ if page == "Vocabulary":
 
             with col3:
                 if st.button(
-                    "Delete",
+                    t("delete"),
                     key=f"delete_word_{index}"
                 ):
                     st.session_state.vocabulary.pop(index)
@@ -560,14 +846,15 @@ if page == "Vocabulary":
                     st.rerun()
 
             if st.session_state.editing_word_index == index:
+
                 edited_word = st.text_input(
-                    "Word",
+                    t("word"),
                     value=item["word"],
                     key=f"edited_word_{index}"
                 )
 
                 edited_translation = st.text_input(
-                    "Translation",
+                    t("translation"),
                     value=item["translation"],
                     key=f"edited_translation_{index}"
                 )
@@ -576,7 +863,7 @@ if page == "Vocabulary":
 
                 with save_col:
                     if st.button(
-                        "Save changes",
+                        t("save_changes"),
                         key=f"save_word_{index}"
                     ):
                         if edited_word.strip() and edited_translation.strip():
@@ -597,7 +884,7 @@ if page == "Vocabulary":
 
                             if new_pair in other_pairs:
                                 st.warning(
-                                    "This vocabulary pair already exists."
+                                    t("pair_exists")
                                 )
 
                             else:
@@ -619,18 +906,18 @@ if page == "Vocabulary":
 
                         else:
                             st.warning(
-                                "Word and translation cannot be empty."
+                                t("empty_word_translation")
                             )
 
                 with cancel_col:
                     if st.button(
-                        "Cancel",
+                        t("cancel"),
                         key=f"cancel_edit_{index}"
                     ):
                         st.session_state.editing_word_index = None
                         st.rerun()
 
-    st.subheader("Saved sets")
+    st.subheader(t("saved_sets"))
 
     if st.session_state.save_set_message:
         st.success(st.session_state.save_set_message)
@@ -641,22 +928,22 @@ if page == "Vocabulary":
         st.session_state.clear_set_name = False
 
     set_name = st.text_input(
-        "Set name",
-        placeholder="e.g. Nature A2",
+        t("set_name"),
+        placeholder=t("set_name_placeholder"),
         key="set_name_input"
     )
 
     if st.button(
-        "Save set",
+        t("save_set"),
         disabled=DEMO_MODE
     ):
         clean_set_name = set_name.strip()
 
         if not clean_set_name:
-            st.warning("Enter a set name first.")
+            st.warning(t("enter_set_name"))
 
         elif not st.session_state.vocabulary:
-            st.warning("Add some vocabulary first.")
+            st.warning(t("add_vocabulary_first"))
 
         elif clean_set_name in st.session_state.vocabulary_sets:
             st.session_state.confirm_replace_set = True
@@ -674,7 +961,7 @@ if page == "Vocabulary":
             st.session_state.clear_set_name = True
 
             st.session_state.save_set_message = (
-                f'Set "{clean_set_name}" saved!'
+                t("set_saved").format(name=clean_set_name)
             )
 
             st.rerun()
@@ -683,14 +970,14 @@ if page == "Vocabulary":
         replace_set_name = st.session_state.replace_set_name
 
         st.warning(
-            f'Set "{replace_set_name}" already exists. Replace it?'
+            t("set_exists_replace").format(name=replace_set_name)
         )
 
         replace_col, cancel_replace_col = st.columns(2)
 
         with replace_col:
             if st.button(
-                "Yes, replace",
+                t("yes_replace"),
                 disabled=DEMO_MODE
             ):
                 replace_set_in_db(
@@ -705,38 +992,38 @@ if page == "Vocabulary":
                 st.rerun()
 
         with cancel_replace_col:
-            if st.button("Cancel replace"):
+            if st.button(t("cancel_replace")):
                 st.session_state.confirm_replace_set = False
                 st.session_state.replace_set_name = None
                 st.rerun()
 
     if st.session_state.vocabulary_sets:
-        st.write("### Your saved sets")
+        st.write(f"### {t('your_saved_sets')}")
 
         selected_set = st.selectbox(
-            "Choose a set",
+            t("choose_set"),
             list(st.session_state.vocabulary_sets.keys()),
             format_func=lambda name: (
                 f"{name} — "
-                f"{len(st.session_state.vocabulary_sets[name])} words"
+                f"{format_word_count(len(st.session_state.vocabulary_sets[name]))}"
             )
         )
 
-        if st.button("Load set"):
+        if st.button(t("load_set")):
             st.session_state.vocabulary = [
                 item.copy()
                 for item in st.session_state.vocabulary_sets[selected_set]
             ]
 
             st.session_state.load_message = (
-                f'Set "{selected_set}" loaded!'
+                t("set_loaded").format(name=selected_set)
             )
 
             st.rerun()
 
         if not st.session_state.confirm_delete_set:
             if st.button(
-                "Delete set",
+                t("delete_set"),
                 disabled=DEMO_MODE
             ):
                 st.session_state.confirm_delete_set = True
@@ -747,14 +1034,14 @@ if page == "Vocabulary":
             delete_set_name = st.session_state.delete_set_name
 
             st.warning(
-                f'Delete set "{delete_set_name}"?'
+                t("delete_set_confirm").format(name=delete_set_name)
             )
 
             confirm_col, cancel_col = st.columns(2)
 
             with confirm_col:
                 if st.button(
-                    "Yes, delete",
+                    t("yes_delete"),
                     disabled=DEMO_MODE
                 ):
                     delete_set_from_db(delete_set_name)
@@ -766,14 +1053,14 @@ if page == "Vocabulary":
                     st.rerun()
 
             with cancel_col:
-                if st.button("Cancel"):
+                if st.button(t("cancel")):
                     st.session_state.confirm_delete_set = False
                     st.session_state.delete_set_name = None
                     st.rerun()
 
         if not st.session_state.renaming_set:
             if st.button(
-                "Rename set",
+                t("rename_set"),
                 disabled=DEMO_MODE
             ):
                 st.session_state.renaming_set = True
@@ -784,7 +1071,7 @@ if page == "Vocabulary":
             old_name = st.session_state.rename_set_name
 
             new_name = st.text_input(
-                "New set name",
+                t("new_set_name"),
                 value=old_name
             )
 
@@ -792,19 +1079,19 @@ if page == "Vocabulary":
 
             with rename_col:
                 if st.button(
-                    "Save new name",
+                    t("save_new_name"),
                     disabled=DEMO_MODE
                 ):
                     new_name = new_name.strip()
 
                     if not new_name:
-                        st.warning("Set name cannot be empty.")
+                        st.warning(t("set_name_empty"))
 
                     elif (
                         new_name != old_name
                         and new_name in st.session_state.vocabulary_sets
                     ):
-                        st.warning("A set with this name already exists.")
+                        st.warning(t("set_name_exists"))
 
                     else:
                         rename_set_in_db(
@@ -819,7 +1106,7 @@ if page == "Vocabulary":
                         st.rerun()
 
             with cancel_rename_col:
-                if st.button("Cancel rename"):
+                if st.button(t("cancel_rename")):
                     st.session_state.renaming_set = False
                     st.session_state.rename_set_name = None
                     st.rerun()
@@ -828,17 +1115,17 @@ if page == "Vocabulary":
 # Quiz
 # -------------------------
 
-elif page == "Quiz":
+elif page == "quiz":
     st.divider()
-    st.subheader("Quiz")
+    st.subheader(t("quiz_title"))
 
     st.write(
-        f"🦊 **Score: {st.session_state.score} / "
+        f"🦊 **{t('score')}: {st.session_state.score} / "
         f"{st.session_state.total_questions}**"
     )
 
     if len(st.session_state.vocabulary) < 4:
-        st.info("Add at least 4 words to generate a quiz.")
+        st.info(t("add_4_words"))
 
     else:
         if (
@@ -860,28 +1147,34 @@ elif page == "Quiz":
             quiz_options.sort()
 
             quiz_length = st.radio(
-                "Number of questions:",
+                t("number_questions"),
                 quiz_options,
                 horizontal=True
             )
 
             quiz_type = st.radio(
-                "Quiz type:",
-                ["Multiple Choice", "Gap Fill", "Matching"],
+                t("quiz_type"),
+                [
+                    "multiple_choice",
+                    "gap_fill",
+                    "matching"
+                ],
+                format_func=lambda option: t(option),
                 horizontal=True
             )
 
-            if quiz_type == "Gap Fill":
+            if quiz_type == "gap_fill":
                 gap_direction = st.radio(
-                    "Gap Fill direction:",
+                    t("gap_direction"),
                     [
-                        "Translation → Word",
-                        "Word → Translation"
+                        "translation_to_word",
+                        "word_to_translation"
                     ],
+                    format_func=lambda option: t(option),
                     horizontal=True
                 )
 
-            if st.button("Start quiz"):
+            if st.button(t("start_quiz")):
                 st.session_state.mistake_words = []
                 st.session_state.retry_mode = False
                 st.session_state.quiz_type = quiz_type
@@ -892,7 +1185,7 @@ elif page == "Quiz":
                 st.session_state.quiz_length = quiz_length
                 st.session_state.answer_key_counter += 1
 
-                if quiz_type == "Matching":
+                if quiz_type == "matching":
                     matching_count = min(4, len(st.session_state.vocabulary))
                     st.session_state.matching_round_counter += 1
 
@@ -945,8 +1238,8 @@ elif page == "Quiz":
         else:
             show_quiz_fox(fox_sneaky_b64)
         
-        if st.session_state.quiz_type == "Matching":
-            st.subheader("Match the words")
+        if st.session_state.quiz_type == "matching":
+            st.subheader(t("match_words"))
 
             for index, item in enumerate(st.session_state.matching_pairs):
                 selected_translation = st.selectbox(
@@ -962,7 +1255,7 @@ elif page == "Quiz":
                 st.session_state.matching_answers[index] = selected_translation
 
             if not st.session_state.matching_checked:
-                if st.button("Check matches"):
+                if st.button(t("check_matches")):
                     matching_score = 0
 
                     for index, item in enumerate(st.session_state.matching_pairs):
@@ -999,22 +1292,25 @@ elif page == "Quiz":
                         )
                     else:
                         st.error(
-                            f"{item['word']} — correct: {item['translation']}"
+                            f"{item['word']} — {t('correct_answer')}: "
+                            f"{item['translation']}"
                         )
 
                 st.write(
-                    f"### Matching score: "
+                    f"### {t('matching_score')}: "
                     f"{matching_score} / {len(st.session_state.matching_pairs)}"
                 )
 
                 if matching_score == len(st.session_state.matching_pairs):
-                    st.success("🦊 Perfect match!")
-                elif matching_score >= len(st.session_state.matching_pairs) / 2:
-                    st.info("🦊 Nice work!")
-                else:
-                    st.error("🦊 Keep going!")
+                    st.success(t("perfect_match"))
 
-                if st.button("Next matching round"):
+                elif matching_score >= len(st.session_state.matching_pairs) / 2:
+                    st.info(t("nice_work"))
+
+                else:
+                    st.error(t("keep_going"))
+
+                if st.button(t("next_matching_round")):
                     st.session_state.matching_round_score = 0
 
                     matching_count = min(
@@ -1042,7 +1338,10 @@ elif page == "Quiz":
 
                     st.rerun()
 
-                if st.button("End quiz", key="end_matching_quiz"):
+                if st.button(
+                    t("end_quiz"),
+                    key="end_matching_quiz"
+                ):
                     st.session_state.quiz_finished = True
                     st.rerun()
 
@@ -1055,44 +1354,62 @@ elif page == "Quiz":
                 current_question = st.session_state.total_questions
 
             st.write(
-                f"**Question {current_question} "
-                f"of {len(st.session_state.quiz_words)}**"
+                f"**{t('question_progress').format(
+                    current=current_question,
+                    total=len(st.session_state.quiz_words)
+                )}**"
             )
 
-            if st.session_state.quiz_type == "Multiple Choice":
-                st.write(f'### What does "{question["word"]}" mean?')
+            # if st.session_state.quiz_type == "multiple_choice":
+            #     st.write(f'### What does "{question["word"]}" mean?')
+
+            #     answer = st.radio(
+            #         "Choose an answer:",
+            #         question["options"],
+            #         index=None,
+            #         key=f"quiz_answer_{st.session_state.answer_key_counter}"
+            #     )
+            if st.session_state.quiz_type == "multiple_choice":
+                st.write(
+                    f"### {t('what_does_mean').format(
+                        word=question['word']
+                    )}"
+                )
 
                 answer = st.radio(
-                    "Choose an answer:",
+                    t("choose_answer"),
                     question["options"],
                     index=None,
                     key=f"quiz_answer_{st.session_state.answer_key_counter}"
                 )
 
             else:
-                if st.session_state.gap_direction == "Translation → Word":
+                if st.session_state.gap_direction == "translation_to_word":
                     prompt_text = question["correct_answer"]
 
                 else:
                     prompt_text = question["word"]
 
                 st.write(
-                    f'### Translate **"{prompt_text}"**'
+                    f"### {t('translate_prompt').format(
+                        text=prompt_text
+                    )}"
                 )
 
                 answer = st.text_input(
-                    "Your answer:",
+                    t("your_answer"),
                     key=f"quiz_answer_{st.session_state.answer_key_counter}"
                 )
 
             if not st.session_state.answered:
-                if st.button("Check answer"):
+                if st.button(t("check_answer")):
+
 
                     if answer is None or answer.strip() == "":
-                        st.warning("Enter an answer first.")
+                        st.warning(t("enter_answer_first"))
 
                     else:
-                        if st.session_state.quiz_type == "Multiple Choice":
+                        if st.session_state.quiz_type == "multiple_choice":
                             correct_answer_text = question["correct_answer"]
 
                             is_correct = (
@@ -1100,7 +1417,7 @@ elif page == "Quiz":
                             )
 
                         else:
-                            if st.session_state.gap_direction == "Translation → Word":
+                            if st.session_state.gap_direction == "translation_to_word":
                                 correct_answer_text = question["word"]
                             else:
                                 correct_answer_text = question["correct_answer"]
@@ -1117,14 +1434,14 @@ elif page == "Quiz":
 
                         if is_correct:
                             st.session_state.score += 1
-                            st.session_state.reaction = random.choice(
-                                correct_reactions
+                            st.session_state.reaction = t(
+                                random.choice(correct_reactions)
                             )
 
                         else:
-                            st.session_state.reaction = random.choice(
-                                wrong_reactions
-                            )
+                            st.session_state.reaction = t(
+                            random.choice(wrong_reactions)
+                        )
 
                             if question["word"] not in [
                                 item["word"] for item in st.session_state.mistake_words
@@ -1158,11 +1475,11 @@ elif page == "Quiz":
                 else:
                     st.error(
                         f"{st.session_state.reaction} "
-                        f"The correct answer is: {correct_answer_text}"
+                        f"{t('correct_answer_is').format(answer=correct_answer_text)}"
                     )
 
                 if st.session_state.total_questions < len(st.session_state.quiz_words):
-                    if st.button("Next question"):
+                    if st.button(t("next_question")):
 
                         st.session_state.next_debug = {
                             "retry": st.session_state.retry_mode,
@@ -1183,15 +1500,18 @@ elif page == "Quiz":
 
                         st.rerun()
                         
-                    if st.button("End quiz", key="end_regular_quiz"):
+                    if st.button(
+                        t("end_quiz"),
+                        key="end_regular_quiz"
+                    ):
                         st.session_state.quiz_finished = True
                         st.rerun()
 
     if st.session_state.quiz_finished:
-        st.subheader("Quiz complete! 🦊")
+        st.subheader(t("quiz_complete"))
 
         st.write(
-            f"### Final score: "
+            f"### {t('final_score')}: "
             f"{st.session_state.score} / {st.session_state.total_questions}"
         )
 
@@ -1202,22 +1522,26 @@ elif page == "Quiz":
                 * 100
             )
 
-            st.write(f"**{percentage:.0f}% correct**")
+            st.write(
+                f"**{t('percent_correct').format(
+                    percentage=f'{percentage:.0f}'
+                )}**"
+            )
 
-            if st.session_state.quiz_type == "Matching":
+            if st.session_state.quiz_type == "matching":
                 st.write(
-                    f"Questions completed: "
+                    f"{t('questions_completed')}: "
                     f"{st.session_state.total_questions}"
                 )
             else:
                 st.write(
-                    f"Questions completed: "
+                    f"{t('questions_completed')}: "
                     f"{st.session_state.total_questions} / "
                     f"{len(st.session_state.quiz_words)}"
                 )
 
         if st.session_state.mistake_words:
-            if st.button("Practice mistakes"):
+            if st.button(t("practice_mistakes")):
                 st.session_state.retry_mode = True
 
                 st.session_state.quiz_words = st.session_state.mistake_words.copy()
@@ -1238,7 +1562,7 @@ elif page == "Quiz":
 
                 st.rerun()
 
-        if st.button("Start new quiz"):
+        if st.button(t("start_new_quiz")):
             st.session_state.quiz_finished = False
             st.session_state.quiz_started = False
             st.session_state.quiz_question = None
