@@ -19,9 +19,6 @@ def t(key):
 
 DEMO_MODE = APP_MODE == "demo"
 
-if DEMO_MODE:
-    st.info(t("demo_mode_banner"))
-
 def load_css(file_name):
     with open(file_name, "r") as f:
         st.markdown(
@@ -517,8 +514,26 @@ translations = {
     },
 }
 
-# def t(key):
-#     return translations[st.session_state.language][key]
+def t(key):
+    return translations[st.session_state.language][key]
+
+language_label = st.sidebar.selectbox(
+    "Language",
+    ["English", "Русский"]
+)
+
+st.session_state.language = (
+    "ru" if language_label == "Русский" else "en"
+)
+
+page = st.sidebar.radio(
+    t("navigation"),
+    ["vocabulary", "quiz"],
+    format_func=lambda option: t(option)
+)
+
+if DEMO_MODE:
+    st.info(t("demo_mode_banner"))
 # -------------------------
 # Session state
 # -------------------------
@@ -650,21 +665,6 @@ st.markdown(
     </div>
     """,
     unsafe_allow_html=True
-)
-
-language_label = st.sidebar.selectbox(
-    "Language",
-    ["English", "Русский"]
-)
-
-st.session_state.language = (
-    "ru" if language_label == "Русский" else "en"
-)
-
-page = st.sidebar.radio(
-    t("navigation"),
-    ["vocabulary", "quiz"],
-    format_func=lambda option: t(option)
 )
 
 # -------------------------
