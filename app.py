@@ -5,9 +5,15 @@ from pathlib import Path
 import base64
 import json
 import psycopg
+import os
 
 database_url = st.secrets["NEON_DATABASE_URL"]
-APP_MODE = st.secrets.get("APP_MODE", "demo")
+
+APP_MODE = os.getenv(
+    "QUIZFOX_APP_MODE",
+    st.secrets.get("APP_MODE", "demo")
+)
+
 DEMO_MODE = APP_MODE == "demo"
 
 if DEMO_MODE:
