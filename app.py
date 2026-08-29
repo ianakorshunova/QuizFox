@@ -391,10 +391,11 @@ translations = {
         "choose_word_for_ai": "Choose a word:",
         "generate_example": "Generate example",
 
-        "demo_ai_example": "Demo AI example:",
-
-        "ai_demo_note": "Demo mode — this is a pre-generated example.",
         "ai_owner_placeholder": "Live AI generation will be connected here.",
+
+        "ai_demo_note": (
+            "Demo mode — try a sample pre-generated AI response."
+        ),
     },
 
     "ru": {
@@ -529,43 +530,48 @@ translations = {
         "choose_word_for_ai": "Выберите слово:",
         "generate_example": "Сгенерировать пример",
 
-        "demo_ai_example": "Демо-пример от ИИ:",
-
-        "ai_demo_note": "Демо-режим — это заранее подготовленный пример.",
         "ai_owner_placeholder": "Здесь будет подключена генерация с помощью ИИ.",
+
+        "ai_demo_note": (
+            "Демо-режим — попробуйте пример заранее подготовленного ИИ-ответа."
+        ),
     },
 }
 
 def t(key):
     return translations[st.session_state.language][key]
 
+DEMO_AI_EXAMPLES = [
+    "Why is the elephant so huge?",
+    "My brother doesn't like swimming in the sea.",
+    "你几点上班？",
+]
+
+
 @st.dialog("🦊 AI Fox Assistant")
 def show_ai_fox_dialog():
-    if not st.session_state.vocabulary:
-        st.info(t("add_vocabulary_first"))
-        return
 
-    selected_word = st.selectbox(
-        t("choose_word_for_ai"),
-        st.session_state.vocabulary,
-        format_func=lambda item: (
-            f"{item['word']} — {item['translation']}"
-        )
-    )
+    if DEMO_MODE:
+        st.caption(t("ai_demo_note"))
 
-    if st.button(t("generate_example")):
-        st.write(
-            f"**{selected_word['word']}** — "
-            f"{selected_word['translation']}"
-        )
+        if st.button(t("generate_example")):
+            example = random.choice(DEMO_AI_EXAMPLES)
+            st.write(example)
 
-        if DEMO_MODE:
-            st.caption(t("ai_demo_note"))
-            st.write(
-                "The fox will generate an example sentence here."
+    else:
+        if not st.session_state.vocabulary:
+            st.info(t("add_vocabulary_first"))
+            return
+
+        selected_word = st.selectbox(
+            t("choose_word_for_ai"),
+            st.session_state.vocabulary,
+            format_func=lambda item: (
+                f"{item['word']} — {item['translation']}"
             )
+        )
 
-        else:
+        if st.button(t("generate_example")):
             st.info(t("ai_owner_placeholder"))
 
 language_label = st.sidebar.selectbox(
