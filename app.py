@@ -384,6 +384,17 @@ translations = {
             "Portfolio demo — database changes are disabled. "
             "You can add vocabulary and try quizzes, but changes won’t be saved."
         ),
+
+        "ai_fox_assistant": "🦊 AI Fox Assistant",
+        "ai_fox_coming_soon": "AI features will appear here soon.",
+
+        "choose_word_for_ai": "Choose a word:",
+        "generate_example": "Generate example",
+
+        "demo_ai_example": "Demo AI example:",
+
+        "ai_demo_note": "Demo mode — this is a pre-generated example.",
+        "ai_owner_placeholder": "Live AI generation will be connected here.",
     },
 
     "ru": {
@@ -511,11 +522,51 @@ translations = {
             "Демо для портфолио — изменения в базе данных отключены. "
             "Вы можете добавлять слова и проходить квизы, но изменения не сохранятся."
         ),
+
+        "ai_fox_assistant": "🦊 Лис-ассистент",
+        "ai_fox_coming_soon": "ИИ-функции скоро появятся здесь.",
+
+        "choose_word_for_ai": "Выберите слово:",
+        "generate_example": "Сгенерировать пример",
+
+        "demo_ai_example": "Демо-пример от ИИ:",
+
+        "ai_demo_note": "Демо-режим — это заранее подготовленный пример.",
+        "ai_owner_placeholder": "Здесь будет подключена генерация с помощью ИИ.",
     },
 }
 
 def t(key):
     return translations[st.session_state.language][key]
+
+@st.dialog("🦊 AI Fox Assistant")
+def show_ai_fox_dialog():
+    if not st.session_state.vocabulary:
+        st.info(t("add_vocabulary_first"))
+        return
+
+    selected_word = st.selectbox(
+        t("choose_word_for_ai"),
+        st.session_state.vocabulary,
+        format_func=lambda item: (
+            f"{item['word']} — {item['translation']}"
+        )
+    )
+
+    if st.button(t("generate_example")):
+        st.write(
+            f"**{selected_word['word']}** — "
+            f"{selected_word['translation']}"
+        )
+
+        if DEMO_MODE:
+            st.caption(t("ai_demo_note"))
+            st.write(
+                "The fox will generate an example sentence here."
+            )
+
+        else:
+            st.info(t("ai_owner_placeholder"))
 
 language_label = st.sidebar.selectbox(
     "Language",
@@ -649,7 +700,24 @@ if "fox_mood" not in st.session_state:
 if "language" not in st.session_state:
     st.session_state.language = "en"
 
-st.session_state.vocabulary_sets = load_sets_from_db()
+all_sets = load_sets_from_db()
+
+if DEMO_MODE:
+    DEMO_SET_NAMES = [
+        "English — Animals",
+        "English — Nature",
+        "Chinese — Daily Life",
+        "Chinese — HSK 4",
+    ]
+
+    st.session_state.vocabulary_sets = {
+        name: words
+        for name, words in all_sets.items()
+        if name in DEMO_SET_NAMES
+    }
+
+else:
+    st.session_state.vocabulary_sets = all_sets
 
 st.markdown(
     f"""
@@ -926,6 +994,9 @@ if page == "vocabulary":
                     ):
                         st.session_state.editing_word_index = None
                         st.rerun()
+
+    if st.button(t("ai_fox_assistant")):
+        show_ai_fox_dialog()
 
     st.subheader(t("saved_sets"))
 
