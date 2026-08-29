@@ -6,6 +6,7 @@ import base64
 import json
 import psycopg
 import os
+from openai import OpenAI
 
 database_url = st.secrets["NEON_DATABASE_URL"]
 
@@ -396,6 +397,11 @@ translations = {
         "ai_demo_note": (
             "Demo mode — try a sample pre-generated AI response."
         ),
+
+        "ai_fox_title": "🦊 AI Fox Assistant",
+        "ai_thinking": "The fox is thinking...",
+        "ai_key_missing": "OpenAI API is not connected yet.",
+        "ai_error": "Something went wrong while generating the example.",
     },
 
     "ru": {
@@ -535,6 +541,11 @@ translations = {
         "ai_demo_note": (
             "Демо-режим — попробуйте пример заранее подготовленного ИИ-ответа."
         ),
+
+        "ai_fox_title": "🦊 Лис-ассистент",
+        "ai_thinking": "Лис думает...",
+        "ai_key_missing": "OpenAI API пока не подключён.",
+        "ai_error": "Не удалось сгенерировать пример.",
     },
 }
 
@@ -547,9 +558,26 @@ DEMO_AI_EXAMPLES = [
     "你几点上班？",
 ]
 
+def generate_ai_example(word, translation):
+    client = OpenAI(
+        api_key=st.secrets["OPENAI_API_KEY"]
+    )
+
+    response = client.responses.create(
+        model="gpt-5.6-luna",
+        input=(
+            "Create one short, natural example sentence "
+            f"using the word '{word}'. "
+            f"The translation of the word is '{translation}'. "
+            "Return only the example sentence."
+        ),
+    )
+
+    return response.output_text
 
 @st.dialog("🦊 AI Fox Assistant")
 def show_ai_fox_dialog():
+    st.subheader(t("ai_fox_title"))
 
     if DEMO_MODE:
         st.caption(t("ai_demo_note"))
@@ -572,7 +600,20 @@ def show_ai_fox_dialog():
         )
 
         if st.button(t("generate_example")):
-            st.info(t("ai_owner_placeholder"))
+            if "OPENAI_API_KEY" not in st.secrets:
+                st.info(t("ai_key_missing"))
+            else:
+                with st.spinner(t("ai_thinking")):
+                    try:
+                        example = generate_ai_example(
+                            selected_word["word"],
+                            selected_word["translation"]
+                        )
+
+                        st.success(example)
+
+                    except Exception:
+                        st.error(t("ai_error"))
 
 language_label = st.sidebar.selectbox(
     "Language",
