@@ -78,3 +78,24 @@ section[data-testid="stSidebar"] div[role="radiogroup"] label p {
     border-color: #F0BEA2 !important;
     color: #2F3140 !important;
 }
+
+/* ------------------------- */
+/* Log-in screen */
+/* ------------------------- */
+
+.teacher-login-title {
+    text-align: center;
+    font-size: 3.2rem;
+    font-weight: 800;
+    line-height: 1.15;
+    margin-top: 4rem;
+    margin-bottom: 1.4rem;
+    color: #2F3142;
+}
+
+.teacher-login-text {
+    text-align: center;
+    font-size: 1.35rem;
+    margin-bottom: 1.5rem;
+    color: #4D4F63;
+}
