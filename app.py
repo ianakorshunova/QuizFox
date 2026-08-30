@@ -563,17 +563,43 @@ def generate_ai_example(word, translation):
         api_key=st.secrets["OPENAI_API_KEY"]
     )
 
+    word_history = st.session_state.ai_example_history.get(
+        word,
+        []
+    )
+
+    previous_examples = "\n".join(
+        word_history[-5:]
+    )
+
     response = client.responses.create(
-        model="gpt-5.6-luna",
+        model="gpt-5.2",
+        temperature=1.1,
         input=(
             "Create one short, natural example sentence "
-            f"using the word '{word}'. "
-            f"The translation of the word is '{translation}'. "
-            "Return only the example sentence."
+            f"using the vocabulary item '{word}'. "
+            f"Its translation is '{translation}'. "
+            "Write the sentence in the same language as the vocabulary item. "
+            "Make the example varied and specific. "
+            "Avoid generic textbook patterns. "
+            "Do not repeat the same setting, subject, verb, situation, "
+            "or sentence structure used in recent examples. "
+            "Use different contexts such as daily life, work, travel, family, "
+            "nature, hobbies, questions, plans, opinions, or unexpected situations. "
+            "\n\nRecent examples to avoid resembling:\n"
+            f"{previous_examples}"
+            "\n\nReturn only the example sentence."
         ),
     )
 
-    return response.output_text
+    example = response.output_text
+
+    st.session_state.ai_example_history.setdefault(
+        word,
+        []
+    ).append(example)
+
+    return example
 
 @st.dialog("🦊 AI Fox Assistant")
 def show_ai_fox_dialog():
@@ -746,6 +772,9 @@ if "fox_mood" not in st.session_state:
 
 if "language" not in st.session_state:
     st.session_state.language = "en"
+
+if "ai_example_history" not in st.session_state:
+    st.session_state.ai_example_history = {}
 
 all_sets = load_sets_from_db()
 
