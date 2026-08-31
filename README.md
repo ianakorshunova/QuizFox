@@ -4,6 +4,13 @@ QuizFox is a Streamlit vocabulary quiz app designed for quick language-learning 
 
 It allows users to create vocabulary sets, run different quiz types, review mistakes, and save reusable sets in a Neon/PostgreSQL database.
 
+## Live demo
+
+Open the demo app on Streamlit:  
+[Live Demo](https://quizfox.streamlit.app/)
+
+Demo Mode lets you try quizzes and add temporary vocabulary, but permanent changes are disabled.
+
 ## Features
 
 - Manual vocabulary entry
