@@ -78,11 +78,5 @@ streamlit run app.py
 
 QuizFox is a portfolio project and is currently under active development.
 
-## Live Demo
-
-Try QuizFox here:
-
-[Open QuizFox Demo](https://quizfox.streamlit.app)
-
 
 
