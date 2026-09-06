@@ -304,6 +304,13 @@ def format_word_count(count):
 
     return f"{count} {form}"
 
+def sync_rename_set():
+    if st.session_state.get("renaming_set"):
+        selected = st.session_state.selected_set_name
+
+        st.session_state.rename_set_name = selected
+        st.session_state.rename_new_name = selected
+
 translations = {
     "en": {
         "navigation": "Navigation",
@@ -1208,7 +1215,9 @@ if page == "vocabulary":
             format_func=lambda name: (
                 f"{name} — "
                 f"{format_word_count(len(st.session_state.vocabulary_sets[name]))}"
-            )
+            ),
+            key="selected_set_name",
+            on_change=sync_rename_set
         )
 
         if st.button(t("load_set")):
@@ -1267,6 +1276,7 @@ if page == "vocabulary":
             ):
                 st.session_state.renaming_set = True
                 st.session_state.rename_set_name = selected_set
+                st.session_state.rename_new_name = selected_set
                 st.rerun()
 
         if st.session_state.renaming_set:
@@ -1274,7 +1284,7 @@ if page == "vocabulary":
 
             new_name = st.text_input(
                 t("new_set_name"),
-                value=old_name
+                key="rename_new_name"
             )
 
             rename_col, cancel_rename_col = st.columns(2)
@@ -1305,6 +1315,7 @@ if page == "vocabulary":
 
                         st.session_state.renaming_set = False
                         st.session_state.rename_set_name = None
+                        st.session_state.rename_new_name = ""
                         st.rerun()
 
             with cancel_rename_col:
