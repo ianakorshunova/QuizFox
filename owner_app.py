@@ -79,5 +79,6 @@ st.sidebar.write(
 if st.sidebar.button("Log out"):
     st.logout()
 
+st.session_state.user_email = st.user.email
 
 runpy.run_path("app.py")

@@ -55,15 +55,23 @@ def show_quiz_fox(image_b64):
     )
 
 def save_set_to_db(set_name, vocabulary):
+    user_email = st.session_state.get("user_email")
+
     with psycopg.connect(database_url) as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """
-                INSERT INTO vocabulary_sets (name)
-                VALUES (%s)
+                INSERT INTO vocabulary_sets (
+                    name,
+                    owner_email
+                )
+                VALUES (%s, %s)
                 RETURNING id;
                 """,
-                (set_name,)
+                (
+                    set_name,
+                    user_email
+                )
             )
 
             set_id = cur.fetchone()[0]
@@ -88,15 +96,21 @@ def save_set_to_db(set_name, vocabulary):
         conn.commit()
 
 def replace_set_in_db(set_name, vocabulary):
+    user_email = st.session_state.get("user_email")
+
     with psycopg.connect(database_url) as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """
                 SELECT id
                 FROM vocabulary_sets
-                WHERE name = %s;
+                WHERE name = %s
+                  AND owner_email = %s;
                 """,
-                (set_name,)
+                (
+                    set_name,
+                    user_email
+                )
             )
 
             row = cur.fetchone()
@@ -134,31 +148,41 @@ def replace_set_in_db(set_name, vocabulary):
         conn.commit()
 
 def rename_set_in_db(old_name, new_name):
+    user_email = st.session_state.get("user_email")
+
     with psycopg.connect(database_url) as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """
                 UPDATE vocabulary_sets
                 SET name = %s
-                WHERE name = %s;
+                WHERE name = %s
+                  AND owner_email = %s;
                 """,
                 (
                     new_name,
-                    old_name
+                    old_name,
+                    user_email
                 )
             )
 
         conn.commit()
 
 def delete_set_from_db(set_name):
+    user_email = st.session_state.get("user_email")
+
     with psycopg.connect(database_url) as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """
                 DELETE FROM vocabulary_sets
-                WHERE name = %s;
+                WHERE name = %s
+                  AND owner_email = %s;
                 """,
-                (set_name,)
+                (
+                    set_name,
+                    user_email
+                )
             )
 
         conn.commit()
@@ -166,25 +190,46 @@ def delete_set_from_db(set_name):
 def load_sets_from_db():
     sets = {}
 
+    user_email = st.session_state.get("user_email")
+
     with psycopg.connect(database_url) as conn:
         with conn.cursor() as cur:
-            cur.execute(
-                """
-                SELECT
-                    vs.id,
-                    vs.name,
-                    vi.word,
-                    vi.translation
-                FROM vocabulary_sets AS vs
-                LEFT JOIN vocabulary_items AS vi
-                    ON vi.set_id = vs.id
-                ORDER BY vs.id, vi.id;
-                """
-            )
+
+            if user_email:
+                cur.execute(
+                    """
+                    SELECT
+                        vs.id,
+                        vs.name,
+                        vi.word,
+                        vi.translation
+                    FROM vocabulary_sets AS vs
+                    LEFT JOIN vocabulary_items AS vi
+                        ON vi.set_id = vs.id
+                    WHERE vs.owner_email = %s
+                    ORDER BY vs.id, vi.id;
+                    """,
+                    (user_email,)
+                )
+
+            else:
+                cur.execute(
+                    """
+                    SELECT
+                        vs.id,
+                        vs.name,
+                        vi.word,
+                        vi.translation
+                    FROM vocabulary_sets AS vs
+                    LEFT JOIN vocabulary_items AS vi
+                        ON vi.set_id = vs.id
+                    ORDER BY vs.id, vi.id;
+                    """
+                )
 
             rows = cur.fetchall()
 
-    for set_id, set_name, word, translation in rows:
+    for _, set_name, word, translation in rows:
         if set_name not in sets:
             sets[set_name] = []
 
