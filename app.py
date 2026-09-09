@@ -243,6 +243,109 @@ def load_sets_from_db():
 
     return sets
 
+def save_parked_question(question_text):
+    user_email = st.session_state.get("user_email")
+
+    if not user_email:
+        return
+
+    with psycopg.connect(database_url) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO parked_questions (
+                    owner_email,
+                    question_text
+                )
+                VALUES (%s, %s);
+                """,
+                (
+                    user_email,
+                    question_text
+                )
+            )
+
+        conn.commit()
+
+def load_parked_questions():
+    user_email = st.session_state.get("user_email")
+
+    if not user_email:
+        return []
+
+    with psycopg.connect(database_url) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT
+                    id,
+                    question_text,
+                    created_at,
+                    resolved
+                FROM parked_questions
+                WHERE owner_email = %s
+                ORDER BY created_at DESC;
+                """,
+                (user_email,)
+            )
+
+            rows = cur.fetchall()
+
+    return [
+        {
+            "id": row[0],
+            "question_text": row[1],
+            "created_at": row[2],
+            "resolved": row[3],
+        }
+        for row in rows
+    ]
+
+def resolve_parked_question(question_id):
+    user_email = st.session_state.get("user_email")
+
+    if not user_email:
+        return
+
+    with psycopg.connect(database_url) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE parked_questions
+                SET resolved = TRUE
+                WHERE id = %s
+                  AND owner_email = %s;
+                """,
+                (
+                    question_id,
+                    user_email
+                )
+            )
+
+        conn.commit()
+
+def delete_parked_question(question_id):
+    user_email = st.session_state.get("user_email")
+
+    if not user_email:
+        return
+
+    with psycopg.connect(database_url) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                DELETE FROM parked_questions
+                WHERE id = %s
+                  AND owner_email = %s;
+                """,
+                (
+                    question_id,
+                    user_email
+                )
+            )
+
+        conn.commit()
+
 correct_reactions = [
     "correct_1",
     "correct_2",
@@ -537,6 +640,18 @@ translations = {
         "build_sentence": "Build the sentence",
 
         "build_sentence_instruction": "Put the words in the correct order.",
+
+        "teacher_tools": "Teacher Tools",
+        "question_budget": "Question Budget",
+        "questions_left": "Questions left: {count}",
+        "use_token": "Use token",
+        "reset_budget": "Reset budget",
+        "parking_lot": "Parking Lot",
+        "question_placeholder": "Type a question...",
+        "park_question": "Park question",
+        "no_parked_questions": "No parked questions yet.",
+        "resolve": "Resolve",
+        "delete": "Delete",
     },
 
     "ru": {
@@ -694,6 +809,19 @@ translations = {
         "build_sentence": "Соберите предложение",
 
         "build_sentence_instruction": "Расставьте слова в правильном порядке.",
+
+        "teacher_tools": "Инструменты учителя",
+        "question_budget": "Лимит вопросов",
+        "questions_left": "Осталось вопросов: {count}",
+        "use_token": "Использовать жетон",
+        "reset_budget": "Сбросить лимит",
+        "parking_lot": "Парковка вопросов",
+        "question_placeholder": "Введите вопрос...",
+        "park_question": "Припарковать вопрос",
+        "no_parked_questions": "Припаркованных вопросов пока нет.",
+
+        "resolve": "Решено",
+        "delete": "Удалить",
     },
 }
 
@@ -865,7 +993,11 @@ st.session_state.language = (
 
 page = st.sidebar.radio(
     t("navigation"),
-    ["vocabulary", "quiz"],
+    [
+        "vocabulary",
+        "quiz",
+        "teacher_tools"
+    ],
     format_func=lambda option: t(option)
 )
 
@@ -1006,6 +1138,15 @@ if "build_sentence_history" not in st.session_state:
 
 if "demo_build_sentence" not in st.session_state:
     st.session_state.demo_build_sentence = None
+
+if "clear_parked_question" not in st.session_state:
+    st.session_state.clear_parked_question = False
+
+if "question_budget_max" not in st.session_state:
+    st.session_state.question_budget_max = 3
+
+if "question_budget_left" not in st.session_state:
+    st.session_state.question_budget_left = 3
 
 all_sets = load_sets_from_db()
 
@@ -1515,6 +1656,23 @@ elif page == "quiz":
         f"🦊 **{t('score')}: {st.session_state.score} / "
         f"{st.session_state.total_questions}**"
     )
+    # st.markdown(
+    #     f"<h1 style='text-align:center;'>🦊 {t('quiz')}</h1>",
+    #     unsafe_allow_html=True
+    # )
+
+    # st.markdown(
+    #     (
+    #         "<div style='text-align:center; "
+    #         "font-size:1.35rem; font-weight:600; "
+    #         "margin-bottom:1.5rem;'>"
+    #         f"{t('score')}: "
+    #         f"{st.session_state.score} / "
+    #         f"{st.session_state.total_questions}"
+    #         "</div>"
+    #     ),
+    #     unsafe_allow_html=True
+    # )
 
     if len(st.session_state.vocabulary) < 4:
         st.info(t("add_4_words"))
@@ -1544,7 +1702,20 @@ elif page == "quiz":
                 horizontal=True
             )
 
-            quiz_type = st.radio(
+            # quiz_type = st.radio(
+            #     t("quiz_type"),
+            #     [
+            #         "multiple_choice",
+            #         "gap_fill",
+            #         "matching",
+            #         "missing_letters",
+            #         "unscramble",
+            #         "build_sentence"
+            #     ],
+            #     format_func=lambda option: t(option),
+            #     horizontal=True
+            # )
+            quiz_type = st.pills(
                 t("quiz_type"),
                 [
                     "multiple_choice",
@@ -1555,7 +1726,7 @@ elif page == "quiz":
                     "build_sentence"
                 ],
                 format_func=lambda option: t(option),
-                horizontal=True
+                selection_mode="single"
             )
 
             if quiz_type == "missing_letters":
@@ -1577,6 +1748,15 @@ elif page == "quiz":
                     horizontal=True
                 )
 
+            # start_left, start_center, start_right = st.columns([2, 2, 2])
+
+            # with start_center:
+            #     start_quiz_clicked = st.button(
+            #         t("start_quiz"),
+            #         use_container_width=True
+            #     )
+
+            # if start_quiz_clicked:
             if st.button(t("start_quiz")):
                 st.session_state.mistake_words = []
                 st.session_state.retry_mode = False
@@ -1634,6 +1814,130 @@ elif page == "quiz":
                 st.session_state.answered = False
 
                 st.rerun()
+
+
+# -------------------------
+# Teacher tools
+# -------------------------
+
+elif page == "teacher_tools":
+    st.divider()
+    st.subheader(t("teacher_tools"))
+
+    st.markdown(f"### {t('question_budget')}")
+
+    budget_value = st.slider(
+        "Set question budget:",
+        min_value=1,
+        max_value=10,
+        value=st.session_state.question_budget_max
+    )
+
+    set_col, use_col, reset_col = st.columns(3)
+
+    with set_col:
+        if st.button("Set budget"):
+            st.session_state.question_budget_max = budget_value
+            st.session_state.question_budget_left = budget_value
+            st.rerun()
+
+    with use_col:
+        if st.button(
+            t("use_token"),
+            disabled=st.session_state.question_budget_left <= 0
+        ):
+            st.session_state.question_budget_left -= 1
+            st.rerun()
+
+    with reset_col:
+        if st.button(t("reset_budget")):
+            st.session_state.question_budget_left = (
+                st.session_state.question_budget_max
+            )
+            st.rerun()
+
+    st.write(
+        t("questions_left").format(
+            count=st.session_state.question_budget_left
+        )
+    )
+
+    st.write(
+        " ".join(
+            ["⭐"] * st.session_state.question_budget_left
+        )
+    )
+
+    progress = (
+        st.session_state.question_budget_left
+        / st.session_state.question_budget_max
+    )
+
+    st.progress(progress)
+
+    st.divider()
+
+    st.markdown(f"### {t('parking_lot')}")
+
+    if st.session_state.clear_parked_question:
+        st.session_state.parked_question_input = ""
+        st.session_state.clear_parked_question = False
+
+    question_text = st.text_input(
+        t("question_placeholder"),
+        key="parked_question_input"
+    )
+
+    if st.button(t("park_question")):
+        question_text = question_text.strip()
+
+        if question_text:
+            save_parked_question(question_text)
+
+            st.session_state.clear_parked_question = True
+            st.rerun()
+
+    parked_questions = load_parked_questions()
+
+    if not parked_questions:
+        st.info(t("no_parked_questions"))
+
+    else:
+        for item in parked_questions:
+            question_col, resolve_col, delete_col = st.columns(
+                [4, 1.4, 1.2]
+            )
+
+            with question_col:
+                if item["resolved"]:
+                    st.write(
+                        f"✅ ~~{item['question_text']}~~"
+                    )
+                else:
+                    st.write(
+                        f"• {item['question_text']}"
+                    )
+
+            with resolve_col:
+                if not item["resolved"]:
+                    if st.button(
+                        t("resolve"),
+                        key=f"resolve_question_{item['id']}"
+                    ):
+                        resolve_parked_question(
+                            item["id"]
+                        )
+                        st.rerun()
+
+            with delete_col:
+                if st.button(
+                    t("delete"),
+                    key=f"delete_question_{item['id']}"
+                ):
+                    delete_parked_question(
+                        item["id"]
+                    )
+                    st.rerun()
 
     # -------------------------
     # Show quiz question

@@ -99,3 +99,20 @@ section[data-testid="stSidebar"] div[role="radiogroup"] label p {
     margin-bottom: 1.5rem;
     color: #4D4F63;
 }
+
+button[data-testid="stBaseButton-pillsActive"] {
+    border-radius: 14px;
+    background-color: #FCE4D6;
+    border: 1px solid #EFB999;
+    font-weight: 700;
+    padding: 0.55rem 1rem;
+}
+
+button[data-testid="stBaseButton-pills"]:hover {
+    border-color: #EFB999;
+}
+
+div[data-testid="stButtonGroup"] label {
+    font-weight: 700;
+    font-size: 1.05rem;
+}
