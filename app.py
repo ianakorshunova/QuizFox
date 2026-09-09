@@ -311,6 +311,76 @@ def sync_rename_set():
         st.session_state.rename_set_name = selected
         st.session_state.rename_new_name = selected
 
+def make_missing_letters(word, difficulty):
+    if len(word) <= 2:
+        return word
+
+    letters = list(word)
+
+    available_indexes = list(
+        range(1, len(word) - 1)
+    )
+
+    if difficulty == "easy":
+        ratio = 0.3
+
+    elif difficulty == "medium":
+        ratio = 0.5
+
+    else:
+        ratio = 0.65
+
+    hidden_count = max(
+        1,
+        round(len(available_indexes) * ratio)
+    )
+
+    hidden_count = min(
+        hidden_count,
+        len(available_indexes)
+    )
+
+    hidden_indexes = random.sample(
+        available_indexes,
+        hidden_count
+    )
+
+    for index in hidden_indexes:
+        letters[index] = "_"
+
+    return "".join(letters)
+
+def scramble_word(word):
+    if len(word) <= 1:
+        return word
+
+    letters = list(word)
+
+    for _ in range(20):
+        random.shuffle(letters)
+        scrambled = "".join(letters)
+
+        if scrambled.lower() != word.lower():
+            return scrambled
+
+    return word
+
+def scramble_sentence(sentence):
+    words = sentence.split()
+
+    if len(words) <= 1:
+        return sentence
+
+    shuffled_words = words.copy()
+
+    for _ in range(20):
+        random.shuffle(shuffled_words)
+
+        if shuffled_words != words:
+            return " / ".join(shuffled_words)
+
+    return " / ".join(words)
+
 translations = {
     "en": {
         "navigation": "Navigation",
@@ -454,6 +524,19 @@ translations = {
         "ai_thinking": "The fox is thinking...",
         "ai_key_missing": "OpenAI API is not connected yet.",
         "ai_error": "Something went wrong while generating the example.",
+
+        "missing_letters": "Missing Letters",
+
+        "missing_letters_difficulty": "Difficulty:",
+        "easy": "Easy",
+        "medium": "Medium",
+        "hard": "Hard",
+
+        "unscramble": "Unscramble",
+
+        "build_sentence": "Build the sentence",
+
+        "build_sentence_instruction": "Put the words in the correct order.",
     },
 
     "ru": {
@@ -598,6 +681,19 @@ translations = {
         "ai_thinking": "Лис думает...",
         "ai_key_missing": "OpenAI API пока не подключён.",
         "ai_error": "Не удалось сгенерировать пример.",
+
+        "missing_letters": "Пропущенные буквы",
+
+        "missing_letters_difficulty": "Сложность:",
+        "easy": "Легко",
+        "medium": "Средне",
+        "hard": "Сложно",
+
+        "unscramble": "Соберите слово",
+
+        "build_sentence": "Соберите предложение",
+
+        "build_sentence_instruction": "Расставьте слова в правильном порядке.",
     },
 }
 
@@ -608,6 +704,29 @@ DEMO_AI_EXAMPLES = [
     "Why is the elephant so huge?",
     "My brother doesn't like swimming in the sea.",
     "你几点上班？",
+]
+
+DEMO_BUILD_SENTENCES = [
+    {
+        "sentence": "I like burgers",
+        "scrambled": "burgers / I / like",
+    },
+    {
+        "sentence": "She reads every evening",
+        "scrambled": "evening / reads / She / every",
+    },
+    {
+        "sentence": "We visit the museum",
+        "scrambled": "museum / the / visit / We",
+    },
+    {
+        "sentence": "They play football outside",
+        "scrambled": "outside / football / They / play",
+    },
+    {
+        "sentence": "My brother cooks dinner",
+        "scrambled": "dinner / brother / cooks / My",
+    },
 ]
 
 def generate_ai_example(word, translation):
@@ -652,6 +771,48 @@ def generate_ai_example(word, translation):
     ).append(example)
 
     return example
+
+def generate_build_sentence(word, translation):
+    client = OpenAI(
+        api_key=st.secrets["OPENAI_API_KEY"]
+    )
+
+    word_history = st.session_state.build_sentence_history.get(
+        word,
+        []
+    )
+
+    previous_sentences = "\n".join(
+        word_history[-5:]
+    )
+
+    response = client.responses.create(
+        model="gpt-5.2",
+        temperature=1.0,
+        input=(
+            "Create one short, natural sentence for a language learner "
+            f"using the vocabulary item '{word}'. "
+            f"Its translation is '{translation}'. "
+            "Write the sentence in the same language as the vocabulary item. "
+            "Use between 3 and 7 words. "
+            "Keep the sentence simple and clear. "
+            "Avoid complex punctuation. "
+            "Do not repeat the same setting, subject, structure, or situation "
+            "used in recent sentences.\n\n"
+            "Recent sentences to avoid resembling:\n"
+            f"{previous_sentences}\n\n"
+            "Return only the sentence."
+        ),
+    )
+
+    sentence = response.output_text.strip()
+
+    st.session_state.build_sentence_history.setdefault(
+        word,
+        []
+    ).append(sentence)
+
+    return sentence
 
 @st.dialog("🦊 AI Fox Assistant")
 def show_ai_fox_dialog():
@@ -827,6 +988,24 @@ if "language" not in st.session_state:
 
 if "ai_example_history" not in st.session_state:
     st.session_state.ai_example_history = {}
+
+if "missing_letters_word" not in st.session_state:
+    st.session_state.missing_letters_word = None
+
+if "scrambled_word" not in st.session_state:
+    st.session_state.scrambled_word = None
+
+if "build_sentence_text" not in st.session_state:
+    st.session_state.build_sentence_text = None
+
+if "build_sentence_scrambled" not in st.session_state:
+    st.session_state.build_sentence_scrambled = None
+
+if "build_sentence_history" not in st.session_state:
+    st.session_state.build_sentence_history = {}
+
+if "demo_build_sentence" not in st.session_state:
+    st.session_state.demo_build_sentence = None
 
 all_sets = load_sets_from_db()
 
@@ -1370,11 +1549,22 @@ elif page == "quiz":
                 [
                     "multiple_choice",
                     "gap_fill",
-                    "matching"
+                    "matching",
+                    "missing_letters",
+                    "unscramble",
+                    "build_sentence"
                 ],
                 format_func=lambda option: t(option),
                 horizontal=True
             )
+
+            if quiz_type == "missing_letters":
+                missing_letters_difficulty = st.radio(
+                    t("missing_letters_difficulty"),
+                    ["easy", "medium", "hard"],
+                    format_func=lambda option: t(option),
+                    horizontal=True
+                )
 
             if quiz_type == "gap_fill":
                 gap_direction = st.radio(
@@ -1391,12 +1581,20 @@ elif page == "quiz":
                 st.session_state.mistake_words = []
                 st.session_state.retry_mode = False
                 st.session_state.quiz_type = quiz_type
+                if quiz_type == "missing_letters":
+                    st.session_state.missing_letters_difficulty = (
+                        missing_letters_difficulty
+                    )
                 st.session_state.score = 0
                 st.session_state.total_questions = 0
                 st.session_state.reaction = None
                 st.session_state.quiz_finished = False
                 st.session_state.quiz_length = quiz_length
+                st.session_state.missing_letters_word = None
                 st.session_state.answer_key_counter += 1
+                st.session_state.scrambled_word = None
+                st.session_state.build_sentence_text = None
+                st.session_state.build_sentence_scrambled = None
 
                 if quiz_type == "matching":
                     matching_count = min(4, len(st.session_state.vocabulary))
@@ -1573,15 +1771,6 @@ elif page == "quiz":
                 )}**"
             )
 
-            # if st.session_state.quiz_type == "multiple_choice":
-            #     st.write(f'### What does "{question["word"]}" mean?')
-
-            #     answer = st.radio(
-            #         "Choose an answer:",
-            #         question["options"],
-            #         index=None,
-            #         key=f"quiz_answer_{st.session_state.answer_key_counter}"
-            #     )
             if st.session_state.quiz_type == "multiple_choice":
                 st.write(
                     f"### {t('what_does_mean').format(
@@ -1596,10 +1785,85 @@ elif page == "quiz":
                     key=f"quiz_answer_{st.session_state.answer_key_counter}"
                 )
 
+            elif st.session_state.quiz_type == "missing_letters":
+                if st.session_state.missing_letters_word is None:
+                    st.session_state.missing_letters_word = make_missing_letters(
+                        question["word"],
+                        st.session_state.missing_letters_difficulty
+                    )
+
+                missing_word = st.session_state.missing_letters_word
+
+                st.write(
+                    f"### {missing_word}"
+                )
+
+                answer = st.text_input(
+                    t("your_answer"),
+                    key=f"quiz_answer_{st.session_state.answer_key_counter}"
+                )
+
+            elif st.session_state.quiz_type == "unscramble":
+                if st.session_state.scrambled_word is None:
+                    st.session_state.scrambled_word = scramble_word(
+                        question["word"]
+                    )
+
+                st.write(
+                    f"### {st.session_state.scrambled_word}"
+                )
+
+                answer = st.text_input(
+                    t("your_answer"),
+                    key=f"quiz_answer_{st.session_state.answer_key_counter}"
+                )
+
+            elif st.session_state.quiz_type == "build_sentence":
+
+                if DEMO_MODE:
+                    if st.session_state.demo_build_sentence is None:
+                        st.session_state.demo_build_sentence = random.choice(
+                            DEMO_BUILD_SENTENCES
+                        )
+
+                    demo_sentence = st.session_state.demo_build_sentence
+
+                    st.write(t("build_sentence_instruction"))
+
+                    st.write(
+                        f"### {demo_sentence['scrambled']}"
+                    )
+
+                    answer = st.text_input(
+                        t("your_answer"),
+                        key=f"quiz_answer_{st.session_state.answer_key_counter}"
+                    )
+
+                else:
+                    if st.session_state.build_sentence_text is None:
+                        st.session_state.build_sentence_text = generate_build_sentence(
+                            question["word"],
+                            question["correct_answer"]
+                        )
+
+                        st.session_state.build_sentence_scrambled = scramble_sentence(
+                            st.session_state.build_sentence_text
+                        )
+
+                    st.write(t("build_sentence_instruction"))
+
+                    st.write(
+                        f"### {st.session_state.build_sentence_scrambled}"
+                    )
+
+                    answer = st.text_input(
+                        t("your_answer"),
+                        key=f"quiz_answer_{st.session_state.answer_key_counter}"
+                    )
+
             else:
                 if st.session_state.gap_direction == "translation_to_word":
                     prompt_text = question["correct_answer"]
-
                 else:
                     prompt_text = question["word"]
 
@@ -1627,6 +1891,36 @@ elif page == "quiz":
 
                             is_correct = (
                                 answer == correct_answer_text
+                            )
+
+                        elif st.session_state.quiz_type == "missing_letters":
+                            correct_answer_text = question["word"]
+
+                            is_correct = (
+                                answer.strip().lower()
+                                == correct_answer_text.strip().lower()
+                            )
+
+                        elif st.session_state.quiz_type == "unscramble":
+                            correct_answer_text = question["word"]
+
+                            is_correct = (
+                                answer.strip().lower()
+                                == correct_answer_text.strip().lower()
+                            )
+
+                        elif st.session_state.quiz_type == "build_sentence":
+
+                            if DEMO_MODE:
+                                correct_answer_text = (
+                                    st.session_state.demo_build_sentence["sentence"]
+                                )
+                            else:
+                                correct_answer_text = st.session_state.build_sentence_text
+
+                            is_correct = (
+                                answer.strip().lower()
+                                == correct_answer_text.strip().lower()
                             )
 
                         else:
@@ -1709,7 +2003,13 @@ elif page == "quiz":
 
                         st.session_state.answered = False
                         st.session_state.reaction = None
+                        st.session_state.missing_letters_word = None
+                        st.session_state.scrambled_word = None
+                        st.session_state.missing_letters_word = None
                         st.session_state.answer_key_counter += 1
+                        st.session_state.build_sentence_text = None
+                        st.session_state.build_sentence_scrambled = None
+                        st.session_state.demo_build_sentence = None
 
                         st.rerun()
                         
@@ -1767,6 +2067,10 @@ elif page == "quiz":
                 st.session_state.answered = False
                 st.session_state.quiz_finished = False
                 st.session_state.reaction = None
+                st.session_state.missing_letters_word = None
+                st.session_state.scrambled_word = None
+                st.session_state.build_sentence_text = None
+                st.session_state.build_sentence_scrambled = None
 
                 st.session_state.answer_key_counter += 1
 
