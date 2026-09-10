@@ -1656,28 +1656,16 @@ elif page == "quiz":
         f"🦊 **{t('score')}: {st.session_state.score} / "
         f"{st.session_state.total_questions}**"
     )
-    # st.markdown(
-    #     f"<h1 style='text-align:center;'>🦊 {t('quiz')}</h1>",
-    #     unsafe_allow_html=True
-    # )
-
-    # st.markdown(
-    #     (
-    #         "<div style='text-align:center; "
-    #         "font-size:1.35rem; font-weight:600; "
-    #         "margin-bottom:1.5rem;'>"
-    #         f"{t('score')}: "
-    #         f"{st.session_state.score} / "
-    #         f"{st.session_state.total_questions}"
-    #         "</div>"
-    #     ),
-    #     unsafe_allow_html=True
-    # )
 
     if len(st.session_state.vocabulary) < 4:
         st.info(t("add_4_words"))
 
     else:
+        st.write(
+            "DEBUG:",
+            "quiz_started =", st.session_state.quiz_started,
+            "quiz_finished =", st.session_state.quiz_finished
+        )
         if (
             not st.session_state.quiz_started
             and not st.session_state.quiz_finished
@@ -1702,19 +1690,6 @@ elif page == "quiz":
                 horizontal=True
             )
 
-            # quiz_type = st.radio(
-            #     t("quiz_type"),
-            #     [
-            #         "multiple_choice",
-            #         "gap_fill",
-            #         "matching",
-            #         "missing_letters",
-            #         "unscramble",
-            #         "build_sentence"
-            #     ],
-            #     format_func=lambda option: t(option),
-            #     horizontal=True
-            # )
             quiz_type = st.pills(
                 t("quiz_type"),
                 [
@@ -1726,7 +1701,9 @@ elif page == "quiz":
                     "build_sentence"
                 ],
                 format_func=lambda option: t(option),
-                selection_mode="single"
+                selection_mode="single",
+                default="multiple_choice",
+                key="quiz_type_selector"
             )
 
             if quiz_type == "missing_letters":
@@ -1734,7 +1711,8 @@ elif page == "quiz":
                     t("missing_letters_difficulty"),
                     ["easy", "medium", "hard"],
                     format_func=lambda option: t(option),
-                    horizontal=True
+                    horizontal=True,
+                    key="missing_letters_difficulty_selector"
                 )
 
             if quiz_type == "gap_fill":
@@ -1748,16 +1726,10 @@ elif page == "quiz":
                     horizontal=True
                 )
 
-            # start_left, start_center, start_right = st.columns([2, 2, 2])
-
-            # with start_center:
-            #     start_quiz_clicked = st.button(
-            #         t("start_quiz"),
-            #         use_container_width=True
-            #     )
-
-            # if start_quiz_clicked:
-            if st.button(t("start_quiz")):
+            if st.button(
+                t("start_quiz"),
+                key="start_quiz_button"
+            ):
                 st.session_state.mistake_words = []
                 st.session_state.retry_mode = False
                 st.session_state.quiz_type = quiz_type
@@ -1812,6 +1784,467 @@ elif page == "quiz":
 
                 st.session_state.quiz_started = True
                 st.session_state.answered = False
+
+                st.rerun()
+
+        # -------------------------
+        # Show quiz question
+        # -------------------------
+
+        st.write("DEBUG: reached show question section")
+
+        if (
+            st.session_state.quiz_started
+            and not st.session_state.quiz_finished
+        ):
+
+            if not st.session_state.answered:
+                show_quiz_fox(fox_thinking_b64)
+            else:
+                show_quiz_fox(fox_sneaky_b64)
+            
+            if st.session_state.quiz_type == "matching":
+                st.subheader(t("match_words"))
+
+                for index, item in enumerate(st.session_state.matching_pairs):
+                    selected_translation = st.selectbox(
+                        f"{item['word']}",
+                        [""] + st.session_state.matching_options,
+                        key=(
+                            f"matching_answer_"
+                            f"{st.session_state.matching_round_counter}_"
+                            f"{index}"
+                        )
+                    )
+
+                    st.session_state.matching_answers[index] = selected_translation
+
+                if not st.session_state.matching_checked:
+                    if st.button(t("check_matches")):
+                        matching_score = 0
+
+                        for index, item in enumerate(st.session_state.matching_pairs):
+                            selected_translation = st.session_state.matching_answers.get(
+                                index,
+                                ""
+                            )
+
+                            if selected_translation == item["translation"]:
+                                matching_score += 1
+
+                        st.session_state.matching_round_score = matching_score
+
+                        st.session_state.score += matching_score
+                        st.session_state.total_questions += len(
+                            st.session_state.matching_pairs
+                        )
+
+                        st.session_state.matching_checked = True
+                        st.rerun()
+
+                else:
+                    matching_score = st.session_state.matching_round_score
+
+                    for index, item in enumerate(st.session_state.matching_pairs):
+                        selected_translation = st.session_state.matching_answers.get(
+                            index,
+                            ""
+                        )
+
+                        if selected_translation == item["translation"]:
+                            st.success(
+                                f"{item['word']} — {item['translation']}"
+                            )
+                        else:
+                            st.error(
+                                f"{item['word']} — {t('correct_answer')}: "
+                                f"{item['translation']}"
+                            )
+
+                    st.write(
+                        f"### {t('matching_score')}: "
+                        f"{matching_score} / {len(st.session_state.matching_pairs)}"
+                    )
+
+                    if matching_score == len(st.session_state.matching_pairs):
+                        st.success(t("perfect_match"))
+
+                    elif matching_score >= len(st.session_state.matching_pairs) / 2:
+                        st.info(t("nice_work"))
+
+                    else:
+                        st.error(t("keep_going"))
+
+                    if st.button(t("next_matching_round")):
+                        st.session_state.matching_round_score = 0
+
+                        matching_count = min(
+                            4,
+                            len(st.session_state.vocabulary)
+                        )
+
+                        st.session_state.matching_pairs = random.sample(
+                            st.session_state.vocabulary,
+                            matching_count
+                        )
+
+                        st.session_state.matching_options = [
+                            item["translation"]
+                            for item in st.session_state.matching_pairs
+                        ]
+
+                        random.shuffle(
+                            st.session_state.matching_options
+                        )
+
+                        st.session_state.matching_answers = {}
+                        st.session_state.matching_checked = False
+                        st.session_state.matching_round_counter += 1
+
+                        st.rerun()
+
+                    if st.button(
+                        t("end_quiz"),
+                        key="end_matching_quiz"
+                    ):
+                        st.session_state.quiz_finished = True
+                        st.rerun()
+
+            else:
+                question = st.session_state.quiz_question
+
+                if not st.session_state.answered:
+                    current_question = st.session_state.total_questions + 1
+                else:
+                    current_question = st.session_state.total_questions
+
+                st.write(
+                    f"**{t('question_progress').format(
+                        current=current_question,
+                        total=len(st.session_state.quiz_words)
+                    )}**"
+                )
+
+                if st.session_state.quiz_type == "multiple_choice":
+                    st.write(
+                        f"### {t('what_does_mean').format(
+                            word=question['word']
+                        )}"
+                    )
+
+                    answer = st.radio(
+                        t("choose_answer"),
+                        question["options"],
+                        index=None,
+                        key=f"quiz_answer_{st.session_state.answer_key_counter}"
+                    )
+
+                elif st.session_state.quiz_type == "missing_letters":
+                    if st.session_state.missing_letters_word is None:
+                        st.session_state.missing_letters_word = make_missing_letters(
+                            question["word"],
+                            st.session_state.missing_letters_difficulty
+                        )
+
+                    missing_word = st.session_state.missing_letters_word
+
+                    st.write(
+                        f"### {missing_word}"
+                    )
+
+                    answer = st.text_input(
+                        t("your_answer"),
+                        key=f"quiz_answer_{st.session_state.answer_key_counter}"
+                    )
+
+                elif st.session_state.quiz_type == "unscramble":
+                    if st.session_state.scrambled_word is None:
+                        st.session_state.scrambled_word = scramble_word(
+                            question["word"]
+                        )
+
+                    st.write(
+                        f"### {st.session_state.scrambled_word}"
+                    )
+
+                    answer = st.text_input(
+                        t("your_answer"),
+                        key=f"quiz_answer_{st.session_state.answer_key_counter}"
+                    )
+
+                elif st.session_state.quiz_type == "build_sentence":
+
+                    if DEMO_MODE:
+                        if st.session_state.demo_build_sentence is None:
+                            st.session_state.demo_build_sentence = random.choice(
+                                DEMO_BUILD_SENTENCES
+                            )
+
+                        demo_sentence = st.session_state.demo_build_sentence
+
+                        st.write(t("build_sentence_instruction"))
+
+                        st.write(
+                            f"### {demo_sentence['scrambled']}"
+                        )
+
+                        answer = st.text_input(
+                            t("your_answer"),
+                            key=f"quiz_answer_{st.session_state.answer_key_counter}"
+                        )
+
+                    else:
+                        if st.session_state.build_sentence_text is None:
+                            st.session_state.build_sentence_text = generate_build_sentence(
+                                question["word"],
+                                question["correct_answer"]
+                            )
+
+                            st.session_state.build_sentence_scrambled = scramble_sentence(
+                                st.session_state.build_sentence_text
+                            )
+
+                        st.write(t("build_sentence_instruction"))
+
+                        st.write(
+                            f"### {st.session_state.build_sentence_scrambled}"
+                        )
+
+                        answer = st.text_input(
+                            t("your_answer"),
+                            key=f"quiz_answer_{st.session_state.answer_key_counter}"
+                        )
+
+                else:
+                    if st.session_state.gap_direction == "translation_to_word":
+                        prompt_text = question["correct_answer"]
+                    else:
+                        prompt_text = question["word"]
+
+                    st.write(
+                        f"### {t('translate_prompt').format(
+                            text=prompt_text
+                        )}"
+                    )
+
+                    answer = st.text_input(
+                        t("your_answer"),
+                        key=f"quiz_answer_{st.session_state.answer_key_counter}"
+                    )
+
+                if not st.session_state.answered:
+                    if st.button(t("check_answer")):
+
+
+                        if answer is None or answer.strip() == "":
+                            st.warning(t("enter_answer_first"))
+
+                        else:
+                            if st.session_state.quiz_type == "multiple_choice":
+                                correct_answer_text = question["correct_answer"]
+
+                                is_correct = (
+                                    answer == correct_answer_text
+                                )
+
+                            elif st.session_state.quiz_type == "missing_letters":
+                                correct_answer_text = question["word"]
+
+                                is_correct = (
+                                    answer.strip().lower()
+                                    == correct_answer_text.strip().lower()
+                                )
+
+                            elif st.session_state.quiz_type == "unscramble":
+                                correct_answer_text = question["word"]
+
+                                is_correct = (
+                                    answer.strip().lower()
+                                    == correct_answer_text.strip().lower()
+                                )
+
+                            elif st.session_state.quiz_type == "build_sentence":
+
+                                if DEMO_MODE:
+                                    correct_answer_text = (
+                                        st.session_state.demo_build_sentence["sentence"]
+                                    )
+                                else:
+                                    correct_answer_text = st.session_state.build_sentence_text
+
+                                is_correct = (
+                                    answer.strip().lower()
+                                    == correct_answer_text.strip().lower()
+                                )
+
+                            else:
+                                if st.session_state.gap_direction == "translation_to_word":
+                                    correct_answer_text = question["word"]
+                                else:
+                                    correct_answer_text = question["correct_answer"]
+
+                                is_correct = (
+                                    answer.strip().lower()
+                                    == correct_answer_text.strip().lower()
+                                )
+
+                            st.session_state.total_questions += 1
+                            st.session_state.answered = True
+                            st.session_state.last_is_correct = is_correct
+                            st.session_state.last_correct_answer = correct_answer_text
+
+                            if is_correct:
+                                st.session_state.score += 1
+                                st.session_state.reaction = t(
+                                    random.choice(correct_reactions)
+                                )
+
+                            else:
+                                st.session_state.reaction = t(
+                                random.choice(wrong_reactions)
+                            )
+
+                                if question["word"] not in [
+                                    item["word"] for item in st.session_state.mistake_words
+                                ]:
+                                    mistake_item = next(
+                                        (
+                                            item
+                                            for item in st.session_state.vocabulary
+                                            if item["word"] == question["word"]
+                                        ),
+                                        None
+                                    )
+
+                                    if mistake_item:
+                                        st.session_state.mistake_words.append(mistake_item)
+
+                            if (
+                                st.session_state.total_questions
+                                >= len(st.session_state.quiz_words)
+                            ):
+                                st.session_state.quiz_finished = True
+
+                            st.rerun()
+
+                else:
+                    is_correct = st.session_state.last_is_correct
+                    correct_answer_text = st.session_state.last_correct_answer
+
+                    if is_correct:
+                        st.success(st.session_state.reaction)
+                    else:
+                        st.error(
+                            f"{st.session_state.reaction} "
+                            f"{t('correct_answer_is').format(answer=correct_answer_text)}"
+                        )
+
+                    if st.session_state.total_questions < len(st.session_state.quiz_words):
+                        if st.button(t("next_question")):
+
+                            st.session_state.next_debug = {
+                                "retry": st.session_state.retry_mode,
+                                "quiz_words": len(st.session_state.quiz_words),
+                                "mistakes": len(st.session_state.mistake_words),
+                                "total": st.session_state.total_questions,
+                            }
+
+                            correct_item = st.session_state.quiz_words[
+                                st.session_state.total_questions
+                            ]
+
+                            st.session_state.quiz_question = create_question(correct_item)
+
+                            st.session_state.answered = False
+                            st.session_state.reaction = None
+                            st.session_state.missing_letters_word = None
+                            st.session_state.scrambled_word = None
+                            st.session_state.missing_letters_word = None
+                            st.session_state.answer_key_counter += 1
+                            st.session_state.build_sentence_text = None
+                            st.session_state.build_sentence_scrambled = None
+                            st.session_state.demo_build_sentence = None
+
+                            st.rerun()
+                            
+                        if st.button(
+                            t("end_quiz"),
+                            key="end_regular_quiz"
+                        ):
+                            st.session_state.quiz_finished = True
+                            st.rerun()
+
+        if st.session_state.quiz_finished:
+            st.subheader(t("quiz_complete"))
+
+            st.write(
+                f"### {t('final_score')}: "
+                f"{st.session_state.score} / {st.session_state.total_questions}"
+            )
+
+            if st.session_state.total_questions > 0:
+                percentage = (
+                    st.session_state.score
+                    / st.session_state.total_questions
+                    * 100
+                )
+
+                st.write(
+                    f"**{t('percent_correct').format(
+                        percentage=f'{percentage:.0f}'
+                    )}**"
+                )
+
+                if st.session_state.quiz_type == "matching":
+                    st.write(
+                        f"{t('questions_completed')}: "
+                        f"{st.session_state.total_questions}"
+                    )
+                else:
+                    st.write(
+                        f"{t('questions_completed')}: "
+                        f"{st.session_state.total_questions} / "
+                        f"{len(st.session_state.quiz_words)}"
+                    )
+
+            if st.session_state.mistake_words:
+                if st.button(t("practice_mistakes")):
+                    st.session_state.retry_mode = True
+
+                    st.session_state.quiz_words = st.session_state.mistake_words.copy()
+                    st.session_state.quiz_length = len(st.session_state.quiz_words)
+
+                    st.session_state.mistake_words = []
+
+                    st.session_state.score = 0
+                    st.session_state.total_questions = 0
+                    st.session_state.answered = False
+                    st.session_state.quiz_finished = False
+                    st.session_state.reaction = None
+                    st.session_state.missing_letters_word = None
+                    st.session_state.scrambled_word = None
+                    st.session_state.build_sentence_text = None
+                    st.session_state.build_sentence_scrambled = None
+
+                    st.session_state.answer_key_counter += 1
+
+                    correct_item = st.session_state.quiz_words[0]
+                    st.session_state.quiz_question = create_question(correct_item)
+
+                    st.rerun()
+
+            if st.button(t("start_new_quiz")):
+                st.session_state.quiz_finished = False
+                st.session_state.quiz_started = False
+                st.session_state.quiz_question = None
+                st.session_state.score = 0
+                st.session_state.total_questions = 0
+                st.session_state.answered = False
+                st.session_state.reaction = None
+                st.session_state.quiz_words = []
+
+                if "quiz_answer" in st.session_state:
+                    del st.session_state.quiz_answer
 
                 st.rerun()
 
@@ -1939,461 +2372,4 @@ elif page == "teacher_tools":
                     )
                     st.rerun()
 
-    # -------------------------
-    # Show quiz question
-    # -------------------------
-
-    if (
-        st.session_state.quiz_started
-        and not st.session_state.quiz_finished
-    ):
-
-        if not st.session_state.answered:
-            show_quiz_fox(fox_thinking_b64)
-        else:
-            show_quiz_fox(fox_sneaky_b64)
-        
-        if st.session_state.quiz_type == "matching":
-            st.subheader(t("match_words"))
-
-            for index, item in enumerate(st.session_state.matching_pairs):
-                selected_translation = st.selectbox(
-                    f"{item['word']}",
-                    [""] + st.session_state.matching_options,
-                    key=(
-                        f"matching_answer_"
-                        f"{st.session_state.matching_round_counter}_"
-                        f"{index}"
-                    )
-                )
-
-                st.session_state.matching_answers[index] = selected_translation
-
-            if not st.session_state.matching_checked:
-                if st.button(t("check_matches")):
-                    matching_score = 0
-
-                    for index, item in enumerate(st.session_state.matching_pairs):
-                        selected_translation = st.session_state.matching_answers.get(
-                            index,
-                            ""
-                        )
-
-                        if selected_translation == item["translation"]:
-                            matching_score += 1
-
-                    st.session_state.matching_round_score = matching_score
-
-                    st.session_state.score += matching_score
-                    st.session_state.total_questions += len(
-                        st.session_state.matching_pairs
-                    )
-
-                    st.session_state.matching_checked = True
-                    st.rerun()
-
-            else:
-                matching_score = st.session_state.matching_round_score
-
-                for index, item in enumerate(st.session_state.matching_pairs):
-                    selected_translation = st.session_state.matching_answers.get(
-                        index,
-                        ""
-                    )
-
-                    if selected_translation == item["translation"]:
-                        st.success(
-                            f"{item['word']} — {item['translation']}"
-                        )
-                    else:
-                        st.error(
-                            f"{item['word']} — {t('correct_answer')}: "
-                            f"{item['translation']}"
-                        )
-
-                st.write(
-                    f"### {t('matching_score')}: "
-                    f"{matching_score} / {len(st.session_state.matching_pairs)}"
-                )
-
-                if matching_score == len(st.session_state.matching_pairs):
-                    st.success(t("perfect_match"))
-
-                elif matching_score >= len(st.session_state.matching_pairs) / 2:
-                    st.info(t("nice_work"))
-
-                else:
-                    st.error(t("keep_going"))
-
-                if st.button(t("next_matching_round")):
-                    st.session_state.matching_round_score = 0
-
-                    matching_count = min(
-                        4,
-                        len(st.session_state.vocabulary)
-                    )
-
-                    st.session_state.matching_pairs = random.sample(
-                        st.session_state.vocabulary,
-                        matching_count
-                    )
-
-                    st.session_state.matching_options = [
-                        item["translation"]
-                        for item in st.session_state.matching_pairs
-                    ]
-
-                    random.shuffle(
-                        st.session_state.matching_options
-                    )
-
-                    st.session_state.matching_answers = {}
-                    st.session_state.matching_checked = False
-                    st.session_state.matching_round_counter += 1
-
-                    st.rerun()
-
-                if st.button(
-                    t("end_quiz"),
-                    key="end_matching_quiz"
-                ):
-                    st.session_state.quiz_finished = True
-                    st.rerun()
-
-        else:
-            question = st.session_state.quiz_question
-
-            if not st.session_state.answered:
-                current_question = st.session_state.total_questions + 1
-            else:
-                current_question = st.session_state.total_questions
-
-            st.write(
-                f"**{t('question_progress').format(
-                    current=current_question,
-                    total=len(st.session_state.quiz_words)
-                )}**"
-            )
-
-            if st.session_state.quiz_type == "multiple_choice":
-                st.write(
-                    f"### {t('what_does_mean').format(
-                        word=question['word']
-                    )}"
-                )
-
-                answer = st.radio(
-                    t("choose_answer"),
-                    question["options"],
-                    index=None,
-                    key=f"quiz_answer_{st.session_state.answer_key_counter}"
-                )
-
-            elif st.session_state.quiz_type == "missing_letters":
-                if st.session_state.missing_letters_word is None:
-                    st.session_state.missing_letters_word = make_missing_letters(
-                        question["word"],
-                        st.session_state.missing_letters_difficulty
-                    )
-
-                missing_word = st.session_state.missing_letters_word
-
-                st.write(
-                    f"### {missing_word}"
-                )
-
-                answer = st.text_input(
-                    t("your_answer"),
-                    key=f"quiz_answer_{st.session_state.answer_key_counter}"
-                )
-
-            elif st.session_state.quiz_type == "unscramble":
-                if st.session_state.scrambled_word is None:
-                    st.session_state.scrambled_word = scramble_word(
-                        question["word"]
-                    )
-
-                st.write(
-                    f"### {st.session_state.scrambled_word}"
-                )
-
-                answer = st.text_input(
-                    t("your_answer"),
-                    key=f"quiz_answer_{st.session_state.answer_key_counter}"
-                )
-
-            elif st.session_state.quiz_type == "build_sentence":
-
-                if DEMO_MODE:
-                    if st.session_state.demo_build_sentence is None:
-                        st.session_state.demo_build_sentence = random.choice(
-                            DEMO_BUILD_SENTENCES
-                        )
-
-                    demo_sentence = st.session_state.demo_build_sentence
-
-                    st.write(t("build_sentence_instruction"))
-
-                    st.write(
-                        f"### {demo_sentence['scrambled']}"
-                    )
-
-                    answer = st.text_input(
-                        t("your_answer"),
-                        key=f"quiz_answer_{st.session_state.answer_key_counter}"
-                    )
-
-                else:
-                    if st.session_state.build_sentence_text is None:
-                        st.session_state.build_sentence_text = generate_build_sentence(
-                            question["word"],
-                            question["correct_answer"]
-                        )
-
-                        st.session_state.build_sentence_scrambled = scramble_sentence(
-                            st.session_state.build_sentence_text
-                        )
-
-                    st.write(t("build_sentence_instruction"))
-
-                    st.write(
-                        f"### {st.session_state.build_sentence_scrambled}"
-                    )
-
-                    answer = st.text_input(
-                        t("your_answer"),
-                        key=f"quiz_answer_{st.session_state.answer_key_counter}"
-                    )
-
-            else:
-                if st.session_state.gap_direction == "translation_to_word":
-                    prompt_text = question["correct_answer"]
-                else:
-                    prompt_text = question["word"]
-
-                st.write(
-                    f"### {t('translate_prompt').format(
-                        text=prompt_text
-                    )}"
-                )
-
-                answer = st.text_input(
-                    t("your_answer"),
-                    key=f"quiz_answer_{st.session_state.answer_key_counter}"
-                )
-
-            if not st.session_state.answered:
-                if st.button(t("check_answer")):
-
-
-                    if answer is None or answer.strip() == "":
-                        st.warning(t("enter_answer_first"))
-
-                    else:
-                        if st.session_state.quiz_type == "multiple_choice":
-                            correct_answer_text = question["correct_answer"]
-
-                            is_correct = (
-                                answer == correct_answer_text
-                            )
-
-                        elif st.session_state.quiz_type == "missing_letters":
-                            correct_answer_text = question["word"]
-
-                            is_correct = (
-                                answer.strip().lower()
-                                == correct_answer_text.strip().lower()
-                            )
-
-                        elif st.session_state.quiz_type == "unscramble":
-                            correct_answer_text = question["word"]
-
-                            is_correct = (
-                                answer.strip().lower()
-                                == correct_answer_text.strip().lower()
-                            )
-
-                        elif st.session_state.quiz_type == "build_sentence":
-
-                            if DEMO_MODE:
-                                correct_answer_text = (
-                                    st.session_state.demo_build_sentence["sentence"]
-                                )
-                            else:
-                                correct_answer_text = st.session_state.build_sentence_text
-
-                            is_correct = (
-                                answer.strip().lower()
-                                == correct_answer_text.strip().lower()
-                            )
-
-                        else:
-                            if st.session_state.gap_direction == "translation_to_word":
-                                correct_answer_text = question["word"]
-                            else:
-                                correct_answer_text = question["correct_answer"]
-
-                            is_correct = (
-                                answer.strip().lower()
-                                == correct_answer_text.strip().lower()
-                            )
-
-                        st.session_state.total_questions += 1
-                        st.session_state.answered = True
-                        st.session_state.last_is_correct = is_correct
-                        st.session_state.last_correct_answer = correct_answer_text
-
-                        if is_correct:
-                            st.session_state.score += 1
-                            st.session_state.reaction = t(
-                                random.choice(correct_reactions)
-                            )
-
-                        else:
-                            st.session_state.reaction = t(
-                            random.choice(wrong_reactions)
-                        )
-
-                            if question["word"] not in [
-                                item["word"] for item in st.session_state.mistake_words
-                            ]:
-                                mistake_item = next(
-                                    (
-                                        item
-                                        for item in st.session_state.vocabulary
-                                        if item["word"] == question["word"]
-                                    ),
-                                    None
-                                )
-
-                                if mistake_item:
-                                    st.session_state.mistake_words.append(mistake_item)
-
-                        if (
-                            st.session_state.total_questions
-                            >= len(st.session_state.quiz_words)
-                        ):
-                            st.session_state.quiz_finished = True
-
-                        st.rerun()
-
-            else:
-                is_correct = st.session_state.last_is_correct
-                correct_answer_text = st.session_state.last_correct_answer
-
-                if is_correct:
-                    st.success(st.session_state.reaction)
-                else:
-                    st.error(
-                        f"{st.session_state.reaction} "
-                        f"{t('correct_answer_is').format(answer=correct_answer_text)}"
-                    )
-
-                if st.session_state.total_questions < len(st.session_state.quiz_words):
-                    if st.button(t("next_question")):
-
-                        st.session_state.next_debug = {
-                            "retry": st.session_state.retry_mode,
-                            "quiz_words": len(st.session_state.quiz_words),
-                            "mistakes": len(st.session_state.mistake_words),
-                            "total": st.session_state.total_questions,
-                        }
-
-                        correct_item = st.session_state.quiz_words[
-                            st.session_state.total_questions
-                        ]
-
-                        st.session_state.quiz_question = create_question(correct_item)
-
-                        st.session_state.answered = False
-                        st.session_state.reaction = None
-                        st.session_state.missing_letters_word = None
-                        st.session_state.scrambled_word = None
-                        st.session_state.missing_letters_word = None
-                        st.session_state.answer_key_counter += 1
-                        st.session_state.build_sentence_text = None
-                        st.session_state.build_sentence_scrambled = None
-                        st.session_state.demo_build_sentence = None
-
-                        st.rerun()
-                        
-                    if st.button(
-                        t("end_quiz"),
-                        key="end_regular_quiz"
-                    ):
-                        st.session_state.quiz_finished = True
-                        st.rerun()
-
-    if st.session_state.quiz_finished:
-        st.subheader(t("quiz_complete"))
-
-        st.write(
-            f"### {t('final_score')}: "
-            f"{st.session_state.score} / {st.session_state.total_questions}"
-        )
-
-        if st.session_state.total_questions > 0:
-            percentage = (
-                st.session_state.score
-                / st.session_state.total_questions
-                * 100
-            )
-
-            st.write(
-                f"**{t('percent_correct').format(
-                    percentage=f'{percentage:.0f}'
-                )}**"
-            )
-
-            if st.session_state.quiz_type == "matching":
-                st.write(
-                    f"{t('questions_completed')}: "
-                    f"{st.session_state.total_questions}"
-                )
-            else:
-                st.write(
-                    f"{t('questions_completed')}: "
-                    f"{st.session_state.total_questions} / "
-                    f"{len(st.session_state.quiz_words)}"
-                )
-
-        if st.session_state.mistake_words:
-            if st.button(t("practice_mistakes")):
-                st.session_state.retry_mode = True
-
-                st.session_state.quiz_words = st.session_state.mistake_words.copy()
-                st.session_state.quiz_length = len(st.session_state.quiz_words)
-
-                st.session_state.mistake_words = []
-
-                st.session_state.score = 0
-                st.session_state.total_questions = 0
-                st.session_state.answered = False
-                st.session_state.quiz_finished = False
-                st.session_state.reaction = None
-                st.session_state.missing_letters_word = None
-                st.session_state.scrambled_word = None
-                st.session_state.build_sentence_text = None
-                st.session_state.build_sentence_scrambled = None
-
-                st.session_state.answer_key_counter += 1
-
-                correct_item = st.session_state.quiz_words[0]
-                st.session_state.quiz_question = create_question(correct_item)
-
-                st.rerun()
-
-        if st.button(t("start_new_quiz")):
-            st.session_state.quiz_finished = False
-            st.session_state.quiz_started = False
-            st.session_state.quiz_question = None
-            st.session_state.score = 0
-            st.session_state.total_questions = 0
-            st.session_state.answered = False
-            st.session_state.reaction = None
-            st.session_state.quiz_words = []
-
-            if "quiz_answer" in st.session_state:
-                del st.session_state.quiz_answer
-
-            st.rerun()
+            
