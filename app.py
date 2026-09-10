@@ -1661,11 +1661,6 @@ elif page == "quiz":
         st.info(t("add_4_words"))
 
     else:
-        st.write(
-            "DEBUG:",
-            "quiz_started =", st.session_state.quiz_started,
-            "quiz_finished =", st.session_state.quiz_finished
-        )
         if (
             not st.session_state.quiz_started
             and not st.session_state.quiz_finished
@@ -1790,8 +1785,6 @@ elif page == "quiz":
         # -------------------------
         # Show quiz question
         # -------------------------
-
-        st.write("DEBUG: reached show question section")
 
         if (
             st.session_state.quiz_started
