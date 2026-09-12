@@ -652,6 +652,11 @@ translations = {
         "no_parked_questions": "No parked questions yet.",
         "resolve": "Resolve",
         "delete": "Delete",
+
+        "sentence_level": "Sentence level:",
+        "beginner": "Beginner",
+        "intermediate": "Intermediate",
+        "advanced": "Advanced",
     },
 
     "ru": {
@@ -822,6 +827,11 @@ translations = {
 
         "resolve": "Решено",
         "delete": "Удалить",
+
+        "sentence_level": "Уровень предложений:",
+        "beginner": "Начальный",
+        "intermediate": "Средний",
+        "advanced": "Продвинутый",
     },
 }
 
@@ -879,6 +889,11 @@ def generate_ai_example(word, translation):
             f"using the vocabulary item '{word}'. "
             f"Its translation is '{translation}'. "
             "Write the sentence in the same language as the vocabulary item. "
+            "When writing in English, use British English spelling and vocabulary. "
+            "Always use correct sentence-final punctuation. "
+            "Statements must end with a period. "
+            "Questions must end with a question mark. "
+            "Keep spelling and punctuation consistent. "
             "Make the example varied and specific. "
             "Avoid generic textbook patterns. "
             "Do not repeat the same setting, subject, verb, situation, "
@@ -891,7 +906,7 @@ def generate_ai_example(word, translation):
         ),
     )
 
-    example = response.output_text
+    example = response.output_text.strip()
 
     st.session_state.ai_example_history.setdefault(
         word,
@@ -900,7 +915,7 @@ def generate_ai_example(word, translation):
 
     return example
 
-def generate_build_sentence(word, translation):
+def generate_build_sentence(word, translation, level):
     client = OpenAI(
         api_key=st.secrets["OPENAI_API_KEY"]
     )
@@ -914,6 +929,29 @@ def generate_build_sentence(word, translation):
         word_history[-5:]
     )
 
+    if level == "beginner":
+        level_instruction = (
+            "Use beginner-level grammar. "
+            "Prefer simple sentence structures and common vocabulary. "
+            "Prefer the present simple when appropriate. "
+            "Avoid complex clauses, idioms, and advanced grammar. "
+        )
+
+    elif level == "intermediate":
+        level_instruction = (
+            "Use intermediate-level grammar. "
+            "You may use past and future forms, modal verbs, "
+            "and simple subordinate clauses. "
+            "Keep the sentence clear and natural. "
+        )
+
+    else:
+        level_instruction = (
+            "Use natural, varied grammar suitable for an advanced learner. "
+            "More complex sentence structures and vocabulary are allowed, "
+            "but keep the sentence concise and clear. "
+        )
+
     response = client.responses.create(
         model="gpt-5.2",
         temperature=1.0,
@@ -922,9 +960,14 @@ def generate_build_sentence(word, translation):
             f"using the vocabulary item '{word}'. "
             f"Its translation is '{translation}'. "
             "Write the sentence in the same language as the vocabulary item. "
+            "When writing in English, use British English spelling and vocabulary. "
+            "Always use correct sentence-final punctuation. "
+            "Statements must end with a period. "
+            "Questions must end with a question mark. "
+            "Keep spelling and punctuation consistent. "
+            f"{level_instruction}"
             "Use between 3 and 7 words. "
-            "Keep the sentence simple and clear. "
-            "Avoid complex punctuation. "
+            "Use simple punctuation appropriate for the sentence. "
             "Do not repeat the same setting, subject, structure, or situation "
             "used in recent sentences.\n\n"
             "Recent sentences to avoid resembling:\n"
@@ -1142,11 +1185,17 @@ if "demo_build_sentence" not in st.session_state:
 if "clear_parked_question" not in st.session_state:
     st.session_state.clear_parked_question = False
 
-if "question_budget_max" not in st.session_state:
-    st.session_state.question_budget_max = 3
+if "english_points" not in st.session_state:
+    st.session_state.english_points = 0
 
-if "question_budget_left" not in st.session_state:
-    st.session_state.question_budget_left = 3
+if "english_points_goal" not in st.session_state:
+    st.session_state.english_points_goal = 5
+
+if "build_sentence_level" not in st.session_state:
+    st.session_state.build_sentence_level = "beginner"
+
+if "english_streak" not in st.session_state:
+    st.session_state.english_streak = 0
 
 all_sets = load_sets_from_db()
 
@@ -1721,6 +1770,14 @@ elif page == "quiz":
                     horizontal=True
                 )
 
+            if quiz_type == "build_sentence":
+                build_sentence_level = st.radio(
+                    t("sentence_level"),
+                    ["beginner", "intermediate", "advanced"],
+                    format_func=lambda option: t(option),
+                    horizontal=True
+                )
+
             if st.button(
                 t("start_quiz"),
                 key="start_quiz_button"
@@ -1732,6 +1789,8 @@ elif page == "quiz":
                     st.session_state.missing_letters_difficulty = (
                         missing_letters_difficulty
                     )
+                if quiz_type == "build_sentence":
+                    st.session_state.build_sentence_level = build_sentence_level
                 st.session_state.score = 0
                 st.session_state.total_questions = 0
                 st.session_state.reaction = None
@@ -1990,7 +2049,8 @@ elif page == "quiz":
                         if st.session_state.build_sentence_text is None:
                             st.session_state.build_sentence_text = generate_build_sentence(
                                 question["word"],
-                                question["correct_answer"]
+                                question["correct_answer"],
+                                st.session_state.build_sentence_level
                             )
 
                             st.session_state.build_sentence_scrambled = scramble_sentence(
@@ -2250,56 +2310,70 @@ elif page == "teacher_tools":
     st.divider()
     st.subheader(t("teacher_tools"))
 
-    st.markdown(f"### {t('question_budget')}")
+    st.markdown("### ⭐ English Points")
 
-    budget_value = st.slider(
-        "Set question budget:",
+    st.session_state.english_points_goal = st.slider(
+        "Points goal:",
         min_value=1,
-        max_value=10,
-        value=st.session_state.question_budget_max
+        max_value=20,
+        value=st.session_state.english_points_goal
     )
 
-    set_col, use_col, reset_col = st.columns(3)
+    st.write(
+        f"Points: {st.session_state.english_points} / "
+        f"{st.session_state.english_points_goal}"
+    )
 
-    with set_col:
-        if st.button("Set budget"):
-            st.session_state.question_budget_max = budget_value
-            st.session_state.question_budget_left = budget_value
-            st.rerun()
+    add_col, reset_col = st.columns(2)
 
-    with use_col:
-        if st.button(
-            t("use_token"),
-            disabled=st.session_state.question_budget_left <= 0
-        ):
-            st.session_state.question_budget_left -= 1
+    with add_col:
+        if st.button("+1 point"):
+            st.session_state.english_points += 1
             st.rerun()
 
     with reset_col:
-        if st.button(t("reset_budget")):
-            st.session_state.question_budget_left = (
-                st.session_state.question_budget_max
-            )
+        if st.button("Reset points"):
+            st.session_state.english_points = 0
             st.rerun()
 
     st.write(
-        t("questions_left").format(
-            count=st.session_state.question_budget_left
-        )
-    )
-
-    st.write(
         " ".join(
-            ["⭐"] * st.session_state.question_budget_left
+            ["⭐"] * st.session_state.english_points
         )
     )
 
-    progress = (
-        st.session_state.question_budget_left
-        / st.session_state.question_budget_max
+    progress = min(
+        st.session_state.english_points
+        / st.session_state.english_points_goal,
+        1.0
     )
 
     st.progress(progress)
+
+    st.divider()
+
+    st.markdown("### 🔥 English Streak")
+
+    st.write(
+        f"Streak: {st.session_state.english_streak} / 3"
+    )
+
+    streak_col, reset_streak_col = st.columns(2)
+
+    with streak_col:
+        if st.button("+1 streak"):
+            st.session_state.english_streak += 1
+
+            if st.session_state.english_streak >= 3:
+                st.session_state.english_points += 1
+                st.session_state.english_streak = 0
+
+            st.rerun()
+
+    with reset_streak_col:
+        if st.button("Reset streak"):
+            st.session_state.english_streak = 0
+            st.rerun()
 
     st.divider()
 
@@ -2341,7 +2415,7 @@ elif page == "teacher_tools":
                     )
                 else:
                     st.write(
-                        f"• {item['question_text']}"
+                        f"📌 {item['question_text']}"
                     )
 
             with resolve_col:
