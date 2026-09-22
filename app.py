@@ -1084,13 +1084,13 @@ if "editing_word_index" not in st.session_state:
     st.session_state.editing_word_index = None
 
 if "quiz_type" not in st.session_state:
-    st.session_state.quiz_type = "Multiple Choice"
+    st.session_state.quiz_type = "multiple_choice"
 
 if "answer_key_counter" not in st.session_state:
     st.session_state.answer_key_counter = 0
 
 if "gap_direction" not in st.session_state:
-    st.session_state.gap_direction = "Translation → Word"
+    st.session_state.gap_direction = "translation_to_word"
 
 if "matching_pairs" not in st.session_state:
     st.session_state.matching_pairs = []
@@ -1193,6 +1193,9 @@ if "english_points_goal" not in st.session_state:
 
 if "build_sentence_level" not in st.session_state:
     st.session_state.build_sentence_level = "beginner"
+
+if "missing_letters_difficulty" not in st.session_state:
+    st.session_state.missing_letters_difficulty = "easy"
 
 if "english_streak" not in st.session_state:
     st.session_state.english_streak = 0
@@ -1775,7 +1778,8 @@ elif page == "quiz":
                     t("sentence_level"),
                     ["beginner", "intermediate", "advanced"],
                     format_func=lambda option: t(option),
-                    horizontal=True
+                    horizontal=True,
+                    key="build_sentence_level_selector"
                 )
 
             if st.button(

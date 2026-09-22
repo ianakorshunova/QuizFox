@@ -7,7 +7,7 @@ os.environ["QUIZFOX_APP_MODE"] = "owner"
 
 CSS_FILE = Path(__file__).parent / "style.css"
 
-with open(CSS_FILE) as css_file:
+with CSS_FILE.open(encoding="utf-8") as css_file:
     st.markdown(
         f"<style>{css_file.read()}</style>",
         unsafe_allow_html=True
