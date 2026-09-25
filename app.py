@@ -925,53 +925,76 @@ def generate_build_sentence(word, translation, level):
         []
     )
 
+    recent_sentences = st.session_state.build_sentence_recent
+
     previous_sentences = "\n".join(
-        word_history[-5:]
+        recent_sentences[-5:]
     )
 
     if level == "beginner":
         level_instruction = (
-            "Use beginner-level grammar. "
-            "Prefer simple sentence structures and common vocabulary. "
-            "Prefer the present simple when appropriate. "
+            "Use beginner-level grammar and common vocabulary. "
+            "Prefer simple sentence structures and the present simple "
+            "when appropriate. "
             "Avoid complex clauses, idioms, and advanced grammar. "
+            "For languages that separate words with spaces, aim for 3 to 7 words. "
         )
 
     elif level == "intermediate":
         level_instruction = (
-            "Use intermediate-level grammar. "
+            "Use intermediate-level grammar and natural everyday vocabulary. "
             "You may use past and future forms, modal verbs, "
             "and simple subordinate clauses. "
-            "Keep the sentence clear and natural. "
+            "For languages that separate words with spaces, aim for 5 to 10 words. "
         )
 
     else:
         level_instruction = (
             "Use natural, varied grammar suitable for an advanced learner. "
-            "More complex sentence structures and vocabulary are allowed, "
-            "but keep the sentence concise and clear. "
+            "You may use more complex sentence structures and richer vocabulary, "
+            "but keep the sentence practical and clear. "
+            "Prefer one clear clause or one short subordinate clause. "
+            "For languages that separate words with spaces, aim for 7 to 10 words. "
         )
 
     response = client.responses.create(
         model="gpt-5.2",
         temperature=1.0,
         input=(
-            "Create one short, natural sentence for a language learner "
+            "Create one complete, natural sentence for a language learner "
             f"using the vocabulary item '{word}'. "
             f"Its translation is '{translation}'. "
-            "Write the sentence in the same language as the vocabulary item. "
+
+            "The translation is provided only to clarify the meaning. "
+            "Do not use the language of the translation unless the vocabulary item "
+            "itself is written in that language. "
+            "The generated sentence must be entirely in the language "
+            "of the vocabulary item. "
+
             "When writing in English, use British English spelling and vocabulary. "
-            "Always use correct sentence-final punctuation. "
-            "Statements must end with a period. "
-            "Questions must end with a question mark. "
-            "Keep spelling and punctuation consistent. "
+
             f"{level_instruction}"
-            "Use between 3 and 7 words. "
-            "Use simple punctuation appropriate for the sentence. "
+
+            "For languages such as Chinese that do not normally separate every word "
+            "with spaces, create a similarly short and natural complete sentence "
+            "instead of following an exact word count. "
+
+            "Never truncate a sentence or omit necessary words just to meet "
+            "the suggested length. "
+            "A complete and natural sentence is more important than the exact length. "
+
+            "Use correct punctuation appropriate to the language. "
+            "In English, statements must end with a period and questions "
+            "must end with a question mark. "
+
+            "Vary sentence openings and grammatical structures. "
+            "Do not begin with the same word or introductory phrase as a recent sentence. "
             "Do not repeat the same setting, subject, structure, or situation "
             "used in recent sentences.\n\n"
+
             "Recent sentences to avoid resembling:\n"
             f"{previous_sentences}\n\n"
+
             "Return only the sentence."
         ),
     )
@@ -982,6 +1005,8 @@ def generate_build_sentence(word, translation, level):
         word,
         []
     ).append(sentence)
+
+    st.session_state.build_sentence_recent.append(sentence)
 
     return sentence
 
@@ -1199,6 +1224,9 @@ if "missing_letters_difficulty" not in st.session_state:
 
 if "english_streak" not in st.session_state:
     st.session_state.english_streak = 0
+
+if "build_sentence_recent" not in st.session_state:
+    st.session_state.build_sentence_recent = []
 
 all_sets = load_sets_from_db()
 
