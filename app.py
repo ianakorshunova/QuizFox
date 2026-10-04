@@ -346,6 +346,52 @@ def delete_parked_question(question_id):
 
         conn.commit()
 
+def load_recent_build_sentences(word, limit=5):
+    user_email = st.session_state.get("user_email")
+
+    if not user_email:
+        return []
+
+    with psycopg.connect(database_url) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT sentence
+                FROM build_sentence_history
+                WHERE owner_email = %s
+                  AND word = %s
+                ORDER BY created_at DESC
+                LIMIT %s;
+                """,
+                (user_email, word, limit)
+            )
+
+            rows = cur.fetchall()
+
+    return [row[0] for row in rows]
+
+def save_build_sentence(word, sentence):
+    user_email = st.session_state.get("user_email")
+
+    if not user_email:
+        return
+
+    with psycopg.connect(database_url) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO build_sentence_history (
+                    owner_email,
+                    word,
+                    sentence
+                )
+                VALUES (%s, %s, %s);
+                """,
+                (user_email, word, sentence)
+            )
+
+        conn.commit()
+
 correct_reactions = [
     "correct_1",
     "correct_2",
@@ -483,6 +529,22 @@ def scramble_sentence(sentence):
             return " / ".join(shuffled_words)
 
     return " / ".join(words)
+
+def normalize_answer(text):
+    return (
+        text.strip()
+        .lower()
+        .replace("’", "'")
+        .replace("‘", "'")
+        .replace("ʼ", "'")
+    )
+
+def clean_markdown_text(text):
+    return (
+        text.replace("**", "")
+        .replace("__", "")
+        .strip()
+    )
 
 translations = {
     "en": {
@@ -922,15 +984,15 @@ def generate_build_sentence(word, translation, level):
         api_key=st.secrets["OPENAI_API_KEY"]
     )
 
-    word_history = st.session_state.build_sentence_history.get(
+    saved_word_sentences = load_recent_build_sentences(
         word,
-        []
+        limit=5
     )
 
-    recent_sentences = st.session_state.build_sentence_recent
+    recent_session_sentences = st.session_state.build_sentence_recent[-5:]
 
     previous_sentences = "\n".join(
-        recent_sentences[-5:]
+        saved_word_sentences + recent_session_sentences
     )
 
     if level == "beginner":
@@ -997,9 +1059,10 @@ def generate_build_sentence(word, translation, level):
             "Vary sentence openings and grammatical structures. "
             "Do not begin with the same word or introductory phrase as a recent sentence. "
             "Do not repeat the same setting, subject, structure, or situation "
-            "used in recent sentences.\n\n"
+            "used in recent sentences. "
+            "Do not reuse the same sentence wording for the same vocabulary item. "
 
-            "Recent sentences to avoid resembling:\n"
+            "Previously generated sentences to avoid repeating or closely resembling:\n"
             f"{previous_sentences}\n\n"
 
             "Return only the sentence."
@@ -1014,6 +1077,8 @@ def generate_build_sentence(word, translation, level):
     ).append(sentence)
 
     st.session_state.build_sentence_recent.append(sentence)
+
+    save_build_sentence(word, sentence)
 
     return sentence
 
@@ -1313,8 +1378,8 @@ if page == "vocabulary":
                 parts = re.split(r"\s{2,}", line, maxsplit=1)
 
             if len(parts) == 2:
-                word = parts[0].replace("**", "").strip()
-                translation = parts[1].replace("**", "").strip()
+                word = clean_markdown_text(parts[0])
+                translation = clean_markdown_text(parts[1])
 
                 if word and translation:
                     imported_words.append(
@@ -1380,10 +1445,13 @@ if page == "vocabulary":
 
     if st.button(t("add_word")):
         if word and translation:
+            clean_word = clean_markdown_text(word)
+            clean_translation = clean_markdown_text(translation)
+
             st.session_state.vocabulary.append(
                 {
-                    "word": word,
-                    "translation": translation
+                    "word": clean_word,
+                    "translation": clean_translation
                 }
             )
 
@@ -1480,9 +1548,14 @@ if page == "vocabulary":
                         key=f"save_word_{index}"
                     ):
                         if edited_word.strip() and edited_translation.strip():
+                            clean_edited_word = clean_markdown_text(edited_word)
+                            clean_edited_translation = clean_markdown_text(
+                                edited_translation
+                            )
+
                             new_pair = (
-                                edited_word.strip().lower(),
-                                edited_translation.strip().lower()
+                                clean_edited_word.lower(),
+                                clean_edited_translation.lower()
                             )
 
                             other_pairs = {
@@ -1502,8 +1575,8 @@ if page == "vocabulary":
 
                             else:
                                 st.session_state.vocabulary[index] = {
-                                    "word": edited_word.strip(),
-                                    "translation": edited_translation.strip()
+                                    "word": clean_edited_word,
+                                    "translation": clean_edited_translation
                                 }
 
                                 st.session_state.editing_word_index = None
@@ -2143,16 +2216,16 @@ elif page == "quiz":
                                 correct_answer_text = question["word"]
 
                                 is_correct = (
-                                    answer.strip().lower()
-                                    == correct_answer_text.strip().lower()
+                                    normalize_answer(answer)
+                                    == normalize_answer(correct_answer_text)
                                 )
 
                             elif st.session_state.quiz_type == "unscramble":
                                 correct_answer_text = question["word"]
 
                                 is_correct = (
-                                    answer.strip().lower()
-                                    == correct_answer_text.strip().lower()
+                                    normalize_answer(answer)
+                                    == normalize_answer(correct_answer_text)
                                 )
 
                             elif st.session_state.quiz_type == "build_sentence":
@@ -2165,8 +2238,8 @@ elif page == "quiz":
                                     correct_answer_text = st.session_state.build_sentence_text
 
                                 is_correct = (
-                                    answer.strip().lower()
-                                    == correct_answer_text.strip().lower()
+                                    normalize_answer(answer)
+                                    == normalize_answer(correct_answer_text)
                                 )
 
                             else:
@@ -2176,8 +2249,8 @@ elif page == "quiz":
                                     correct_answer_text = question["correct_answer"]
 
                                 is_correct = (
-                                    answer.strip().lower()
-                                    == correct_answer_text.strip().lower()
+                                    normalize_answer(answer)
+                                    == normalize_answer(correct_answer_text)
                                 )
 
                             st.session_state.total_questions += 1
