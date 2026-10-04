@@ -543,7 +543,7 @@ def clean_markdown_text(text):
     return (
         text.replace("**", "")
         .replace("__", "")
-        .strip()
+        .strip("*_ ")
     )
 
 translations = {
